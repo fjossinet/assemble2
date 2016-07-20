@@ -2,6 +2,7 @@ package fr.unistra.ibmc.assemble2.gui.components;
 
 import fr.unistra.ibmc.assemble2.io.computations.Mlocarna;
 import fr.unistra.ibmc.assemble2.io.computations.Rnasubopt;
+import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,12 +48,23 @@ public class AlgorithmsConfigurationDialog extends JDialog {
         this.setTitle("Algorithms Configuration");
 
         random_sample.setSelectedItem("" + Rnasubopt.RANDOM_SAMPLE);
+        useMlocarna.setSelected(Mlocarna.useForFoldingLandscape);
+        useMlocarna.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                if (!AssembleConfig.useLocalAlgorithms()) {
+                    Mlocarna.useForFoldingLandscape = false;
+                    useMlocarna.setSelected(false);
+                }
+                else
+                    Mlocarna.useForFoldingLandscape = useMlocarna.isSelected();
+            }
+        });
 
     }
 
     private void onOK() {
         Rnasubopt.RANDOM_SAMPLE = Integer.parseInt(random_sample.getSelectedItem().toString());
-        Mlocarna.useForFoldingLandscape = useMlocarna.isSelected();
+
         dispose();
     }
 
@@ -61,7 +73,6 @@ public class AlgorithmsConfigurationDialog extends JDialog {
     }
 
     private void createUIComponents() {
-        // TODO: place custom component creation code here
     }
 
     {

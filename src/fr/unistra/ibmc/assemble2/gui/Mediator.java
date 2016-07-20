@@ -6,7 +6,11 @@ import fr.unistra.ibmc.assemble2.event.WebSocketClient;
 import fr.unistra.ibmc.assemble2.io.drivers.ChimeraDriver;
 import fr.unistra.ibmc.assemble2.model.*;
 import fr.unistra.ibmc.assemble2.Assemble;
+import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
 import org.noos.xing.mydoggy.plaf.MyDoggyToolWindowManager;
+
+import javax.swing.*;
+import java.net.UnknownHostException;
 
 public class Mediator {
 
@@ -22,10 +26,8 @@ public class Mediator {
     private int horizontalStep = 25;
     private MoleculesList moleculesList;
     private GenomicAnnotationsPanel genomicAnnotationsPanel;
-    private DB genomicMongo, pdbMongo;
     private Mongo mongo;
     private FoldingLandscape foldingLandscape;
-    private MongoDBAlignments mongoDBAlignments;
     private WebSocketClient webSocketClient;
 
     public Mediator(Assemble assemble) {
@@ -188,28 +190,23 @@ public class Mediator {
         return genomicAnnotationsPanel;
     }
 
-    public void setMongo(Mongo mongo) {
-        this.mongo =  mongo;
-    }
-
     public Mongo getMongo() {
+        if (this.mongo == null)
+            try {
+                this.mongo = new Mongo("127.0.0.1", 27017);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
         return this.mongo;
     }
 
-    public DB getPDBMongo() {
-        return this.pdbMongo;
-    }
+    public DB get3DMongo() {
 
-    public void setPDBMongo(DB pdbMongo) {
-        this.pdbMongo =  pdbMongo;
-    }
-
-    public void setGenomicMongo(DB genomicMongo) {
-        this.genomicMongo =  genomicMongo;
-    }
-
-    public DB getGenomicMongo() {
-        return this.genomicMongo;
+        if (AssembleConfig.getFragmentsLibrary().equals("Redundant"))
+            return this.getMongo().getDB("PDB");
+        else if (AssembleConfig.getFragmentsLibrary().equals("Non redundant"))
+            return this.getMongo().getDB("RNA3DHub");
+        return null;
     }
 
     public void setFoldingLandscape(FoldingLandscape foldingLandscape) {
@@ -218,14 +215,6 @@ public class Mediator {
 
     public FoldingLandscape getFoldingLandscape() {
         return foldingLandscape;
-    }
-
-    public void setMongoDBAlignments(MongoDBAlignments mongoDBAlignments) {
-        this.mongoDBAlignments = mongoDBAlignments;
-    }
-
-    public MongoDBAlignments getMongoDBAlignments() {
-        return mongoDBAlignments;
     }
 
     public void setWebSocketClient(WebSocketClient webSocketClient) {

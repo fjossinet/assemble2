@@ -48,7 +48,6 @@ public class AlignmentView {
     //the positions for the reference sequence for which the interactions can be displayed
     protected java.util.List<Integer> selectedPositionsToDrawInteractions;
     protected AlignmentView previousView, nextView;
-    private GeneralPath iWantMoreResiduesOnTheLeftSide, iWantMoreResiduesOnTheRightSide;
     protected Mediator mediator;
     protected Map<SymbolSequence, Integer> annotationLayersDrawn;
     protected Map<SymbolSequence, List<Pair<Annotation,GeneralPath>>> annotationsDrawn;
@@ -184,7 +183,6 @@ public class AlignmentView {
             this.currentY = 0;
             this.firstPos = -1;
             this.lastPos = -2;
-            this.iWantMoreResiduesOnTheLeftSide = null;
             this.drawingArea = new Rectangle(gc.currentX, gc.currentY, gc.currentWidth, this.getHeight(gc));
             /*this.selectionBox = new Rectangle(gc.currentX-this.leftMarge*gc.getHorizontalAdvance(),gc.currentY-this.leftMarge*gc.getVerticalAdvance()/4,this.leftMarge*gc.getVerticalAdvance()/2,this.leftMarge*gc.getVerticalAdvance()/2);
             if (this.selected)
@@ -237,32 +235,6 @@ public class AlignmentView {
                 this.currentX += gc.getHorizontalAdvance();
             }
 
-            if (this.firstPos == 0 && this.alignment.getBiologicalReferenceSequence().getMolecule().isGenomicAnnotation()) {
-                iWantMoreResiduesOnTheLeftSide = new GeneralPath();
-                iWantMoreResiduesOnTheLeftSide.moveTo((this.alignment.getMaxLabelSize()+1) * gc.getHorizontalAdvance() + gc.getLetterWidth() / 2, this.currentY + gc.getCurrentY() - gc.getLetterHeight());
-                iWantMoreResiduesOnTheLeftSide.lineTo((this.alignment.getMaxLabelSize()+1) * gc.getHorizontalAdvance() + gc.getLetterWidth(), this.currentY + gc.getCurrentY() - gc.getLetterHeight());
-                iWantMoreResiduesOnTheLeftSide.lineTo((this.alignment.getMaxLabelSize()+1) * gc.getHorizontalAdvance() + gc.getLetterWidth(), this.currentY + gc.getCurrentY());
-                iWantMoreResiduesOnTheLeftSide.lineTo((this.alignment.getMaxLabelSize()+1) * gc.getHorizontalAdvance() + gc.getLetterWidth() / 2, this.currentY + gc.getCurrentY());
-                iWantMoreResiduesOnTheLeftSide.lineTo((this.alignment.getMaxLabelSize()+1) * gc.getHorizontalAdvance(), this.currentY + gc.getCurrentY() - gc.getLetterHeight() / 2);
-                iWantMoreResiduesOnTheLeftSide.lineTo((this.alignment.getMaxLabelSize()+1) * gc.getHorizontalAdvance() + gc.getLetterWidth() / 2, this.currentY + gc.getCurrentY() - gc.getLetterHeight());
-                g2.fill(iWantMoreResiduesOnTheLeftSide);
-
-                g2.setColor(Color.BLACK);
-
-            }
-            if (this.lastPos == this.alignment.getLength()-1 && this.alignment.getBiologicalReferenceSequence().getMolecule().isGenomicAnnotation()) {
-                iWantMoreResiduesOnTheRightSide = new GeneralPath();
-                iWantMoreResiduesOnTheRightSide.moveTo(this.currentX+gc.currentX - this.viewX, this.currentY+gc.getCurrentY()- gc.getLetterHeight());
-                iWantMoreResiduesOnTheRightSide.lineTo(this.currentX+gc.currentX - this.viewX + gc.getLetterWidth()/2, this.currentY + gc.getCurrentY() - gc.getLetterHeight());
-                iWantMoreResiduesOnTheRightSide.lineTo(this.currentX+gc.currentX - this.viewX + gc.getLetterWidth(), this.currentY + gc.getCurrentY()- gc.getLetterHeight()/2);
-                iWantMoreResiduesOnTheRightSide.lineTo(this.currentX+gc.currentX - this.viewX + gc.getLetterWidth() / 2, this.currentY + gc.getCurrentY());
-                iWantMoreResiduesOnTheRightSide.lineTo(this.currentX+gc.currentX - this.viewX, this.currentY + gc.getCurrentY());
-                iWantMoreResiduesOnTheRightSide.lineTo(this.currentX+gc.currentX - this.viewX, this.currentY+gc.getCurrentY()- gc.getLetterHeight());
-                g2.fill(iWantMoreResiduesOnTheRightSide);
-
-                g2.setColor(Color.BLACK);
-
-            }
 
             seq = this.alignment.getConsensusStructure();
             this.currentY += gc.getVerticalAdvance();
@@ -842,28 +814,6 @@ public class AlignmentView {
                     mediator.getSecondaryCanvas().select(selectedPositions);
                 }
             }
-        } else if (iWantMoreResiduesOnTheLeftSide != null && iWantMoreResiduesOnTheLeftSide.contains(e.getX(), e.getY())) {
-            new SwingWorker() {
-                @Override
-                protected Object doInBackground() throws Exception {
-                    mediator.getSecondaryCanvas().getActivityToolBar().startActivity(this);
-                    mediator.getMongoDBAlignments().iWantMoreResiduesOnTheLeft();
-                    canvas.repaint();
-                    mediator.getSecondaryCanvas().getActivityToolBar().stopActivity();
-                    return null;
-                }
-            }.execute();
-        } else if (this.iWantMoreResiduesOnTheRightSide != null && this.iWantMoreResiduesOnTheRightSide.contains(e.getX(), e.getY())) {
-            new SwingWorker() {
-                @Override
-                protected Object doInBackground() throws Exception {
-                    mediator.getSecondaryCanvas().getActivityToolBar().startActivity(this);
-                    mediator.getMongoDBAlignments().iWantMoreResiduesOnTheRight();
-                    canvas.repaint();
-                    mediator.getSecondaryCanvas().getActivityToolBar().stopActivity();
-                    return null;
-                }
-            }.execute();
         } else {
             for (Map.Entry<SymbolSequence,List<Pair<Annotation, GeneralPath>>> entry: this.annotationsDrawn.entrySet()) {
                 List<Pair<Annotation, GeneralPath>> annotationsDrawn = entry.getValue();

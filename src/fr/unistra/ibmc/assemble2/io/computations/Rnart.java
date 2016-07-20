@@ -25,7 +25,6 @@ public class Rnart extends Computation {
     public List<Residue3D> refine(List<Residue3D> residues3D, List<BaseBaseInteraction> interactions, String threshold) throws Exception {
         File rnartDir =  IoUtils.createTemporaryDirectory("rnart"+System.nanoTime());
 
-        System.out.println(rnartDir.getAbsolutePath());
         rnartDir.mkdir();
         File    globalPDB = new File(rnartDir,"GLOBAL.PDB"),
                 atomFile = new File(rnartDir,"ATOMS.DAT"),

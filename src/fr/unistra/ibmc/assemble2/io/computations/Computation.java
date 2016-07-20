@@ -1,9 +1,13 @@
 package fr.unistra.ibmc.assemble2.io.computations;
 
 import fr.unistra.ibmc.assemble2.gui.Mediator;
+import fr.unistra.ibmc.assemble2.io.drivers.OnHangApplicationDriver;
 import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
+import fr.unistra.ibmc.assemble2.utils.IoUtils;
 
+import javax.swing.*;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
@@ -56,6 +60,70 @@ abstract public class Computation {
             e.printStackTrace();
         }
         return answer;
+    }
+
+    protected boolean isDockerInstalled() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("docker", "-v");
+            Process p = pb.start();
+            BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(p.getInputStream()));
+            StringBuilder builder = new StringBuilder();
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+                builder.append(System.getProperty("line.separator"));
+            }
+            String result = builder.toString();
+            boolean ok = result.trim().matches("^Docker version.+$");
+            if (!ok) {
+                JOptionPane.showMessageDialog(null,
+                        "Your need to install Docker",
+                        "Docker missing",
+                        JOptionPane.WARNING_MESSAGE);
+                IoUtils.openBrowser("https://www.docker.com");
+            }
+            return ok;
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null,
+                    "Your need to install Docker",
+                    "Docker missing",
+                    JOptionPane.WARNING_MESSAGE);
+            IoUtils.openBrowser("https://www.docker.com");
+            return false;
+        }
+    }
+
+    protected boolean isAssemble2DockerImageInstalled() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("docker", "images");
+            Process p = pb.start();
+            BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(p.getInputStream()));
+            StringBuilder builder = new StringBuilder();
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+                builder.append(System.getProperty("line.separator"));
+            }
+            String result = builder.toString();
+            for (String l: result.split("\n"))
+                if (l.startsWith("fjossinet/assemble2"))
+                    return true;
+            JOptionPane.showMessageDialog(null,
+                    "Your need to install the Docker image fjossinet/assemble2",
+                    "Docker Image missing",
+                    JOptionPane.WARNING_MESSAGE);
+            IoUtils.openBrowser("https://hub.docker.com/r/fjossinet/assemble2/");
+            return false;
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null,
+                    "Your need to install the Docker image fjossinet/assemble2",
+                    "Docker Image missing",
+                    JOptionPane.WARNING_MESSAGE);
+            IoUtils.openBrowser("https://hub.docker.com/r/fjossinet/assemble2/");
+            return false;
+        }
     }
 
 }

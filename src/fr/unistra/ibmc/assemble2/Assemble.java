@@ -11,7 +11,6 @@ import fr.unistra.ibmc.assemble2.gui.components.*;
 import fr.unistra.ibmc.assemble2.gui.icons.*;
 import fr.unistra.ibmc.assemble2.io.AssembleProject;
 import fr.unistra.ibmc.assemble2.io.FileParser;
-import fr.unistra.ibmc.assemble2.io.Test;
 import fr.unistra.ibmc.assemble2.io.computations.Rnaview;
 import fr.unistra.ibmc.assemble2.io.drivers.ChimeraDriver;
 import fr.unistra.ibmc.assemble2.model.*;
@@ -52,9 +51,6 @@ import org.jdom.output.XMLOutputter;
 import org.noos.xing.mydoggy.*;
 import org.noos.xing.mydoggy.plaf.MyDoggyToolWindowManager;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.events.*;
-import org.w3c.dom.events.Event;
-import org.w3c.dom.events.EventTarget;
 import org.w3c.dom.html.HTMLAnchorElement;
 import org.w3c.dom.html.HTMLInputElement;
 import org.w3c.dom.html.HTMLLIElement;
@@ -98,7 +94,6 @@ public class Assemble extends Application implements SelectionTransmitter {
 
     public static boolean USE_ABSOLUTE_NUMBERING_SYSTEM = true, DRAW_HELICES_NAMES;
     private static Map<String,List<RNAMotifIcon>> motifsIcons = new Hashtable<String,List<RNAMotifIcon>>();
-    private final ActionListener loadAlignmentsFromMongoDB, loadScaffoldsFromMongoDB;
     private ToolWindow mongoDBPanelWindow, alignmentPanelWindow, genomicAnnotationsWindow;
 
     private MyRNAMotifsPanel myRNAMotifsPanel;
@@ -186,18 +181,7 @@ public class Assemble extends Application implements SelectionTransmitter {
     }
 
     public Assemble(final fr.unistra.ibmc.assemble2.gui.SplashScreen splashScreen) {
-        new Test().test();
         this.splashScreen = splashScreen;
-        this.loadAlignmentsFromMongoDB = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                JDialog dialog = new LoadAlignmentsFromMongoDB(mediator);
-                dialog.pack();
-                IoUtils.centerOnScreen(dialog);
-                dialog.setVisible(true);
-            }};
-        this.loadScaffoldsFromMongoDB = new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-            }};
         if (new File(getUserDir(), "tmp").exists())
             new javax.swing.SwingWorker() {
                 @Override
@@ -2582,6 +2566,14 @@ public class Assemble extends Application implements SelectionTransmitter {
 
                     JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
                     ((FlowLayout)panel.getLayout()).setHgap(0);
+                    final JCheckBox useLocalAlgorithms = new JCheckBox();
+                    useLocalAlgorithms.setSelected(AssembleConfig.useLocalAlgorithms());
+                    panel.add(useLocalAlgorithms);
+                    panel.add(new JLabel("Use algorithms locally (need Docker installed)"));
+                    inputs.add(panel);
+
+                    panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+                    ((FlowLayout)panel.getLayout()).setHgap(0);
                     final JCheckBox launchChimera = new JCheckBox();
                     launchChimera.setSelected(AssembleConfig.launchChimeraAtStart());
                     panel.add(launchChimera);
@@ -2608,48 +2600,6 @@ public class Assemble extends Application implements SelectionTransmitter {
                             else
                                 openWebSocket();
 
-                            if (param.trim().length() == 0) { //we add the mongoDB choice to the menus alignments and genomic annotations.
-                                boolean found = false;
-                                for (int i=0 ; i < alignmentMenu.getItemCount() ; i++) {
-                                    if (alignmentMenu.getItem(i).getText().equals("From MongoDB")) {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) {
-                                    JMenuItem item = new JMenuItem("From MongoDB");
-                                    item.setIcon(new DatabaseIcon());
-                                    item.addActionListener(loadAlignmentsFromMongoDB);
-                                    alignmentMenu.add(item);
-                                }
-                                found = false;
-                                for (int i=0 ; i < genomicAnnotations.getItemCount() ; i++) {
-                                    if (alignmentMenu.getItem(i).getText().equals("From MongoDB")) {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) {
-                                    JMenuItem item = new JMenuItem("From MongoDB");
-                                    item.setIcon(new DatabaseIcon());
-                                    item.addActionListener(loadScaffoldsFromMongoDB);
-                                    genomicAnnotations.add(item);
-                                }
-                            } else { //we remove the mongoDB choice to the menus alignments and genomic annotations.
-                                for (int i=0 ; i < alignmentMenu.getItemCount() ; i++) {
-                                    if (alignmentMenu.getItem(i).getText().equals("From MongoDB")) {
-                                        alignmentMenu.remove(i);
-                                        break;
-                                    }
-                                }
-
-                                for (int i=0 ; i < genomicAnnotations.getItemCount() ; i++) {
-                                    if (genomicAnnotations.getItem(i).getText().equals("From MongoDB")) {
-                                        genomicAnnotations.remove(i);
-                                        break;
-                                    }
-                                }
-                            }
                         }
 
                         String previousChimeraPath = AssembleConfig.getChimeraPath();
@@ -2657,15 +2607,11 @@ public class Assemble extends Application implements SelectionTransmitter {
                         if (param != null && param.trim().length() != 0)
                             AssembleConfig.setChimeraPath(param.trim());
 
+                        AssembleConfig.useLocalAlgorithms(useLocalAlgorithms.isSelected());
+
                         AssembleConfig.launchChimeraAtStart(launchChimera.isSelected());
 
                         AssembleConfig.setFragmentsLibrary((String)fragmentsLibrary.getSelectedItem());
-                        if (mediator.getMongo() != null) {
-                            if ("Redundant".equals(AssembleConfig.getFragmentsLibrary()))
-                                mediator.setPDBMongo(mediator.getMongo().getDB("PDB"));
-                            else if ("Non redundant".equals(AssembleConfig.getFragmentsLibrary()))
-                                mediator.setPDBMongo(mediator.getMongo().getDB("RNA3DHub"));
-                        }
 
                         AssembleConfig.popupLateralPanels(popupLateralPanels.isSelected());
 
@@ -3796,7 +3742,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             ex.printStackTrace();
         }
 
-        if (/*args.length == 0 || !"start".equals(args[0])*/ false) {
+        if (args.length == 0 || !"start".equals(args[0])) {
             JOptionPane.showMessageDialog(null,"To start Assemble, double-click on one of the launch files in the Assemble directory.");
             System.exit(0);
         }

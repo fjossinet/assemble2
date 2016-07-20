@@ -367,6 +367,20 @@ public class AssembleConfig {
         document.getRootElement().getChild("launch-chimera").setText(""+launch);
     }
 
+    public static boolean useLocalAlgorithms() {
+        Element e = document.getRootElement().getChild("local-algorithms");
+        if (e == null) {
+            e = new Element("local-algorithms");
+            e.setText("false");
+            document.getRootElement().addContent(e);
+        }
+        return new Boolean(e.getTextTrim());
+    }
+
+    public static void useLocalAlgorithms(boolean use) {
+        document.getRootElement().getChild("local-algorithms").setText(""+use);
+    }
+
 
     public static boolean popupLateralPanels() {
         Element e = document.getRootElement().getChild("popup-lateral-panels");

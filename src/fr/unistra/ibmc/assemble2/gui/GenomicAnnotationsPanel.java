@@ -286,7 +286,7 @@ public class GenomicAnnotationsPanel extends JXTable implements MouseListener {
     }
 
     public void loadAnnotation(final DBObject selected_annotation) {
-        new SwingWorker() {
+        /*new SwingWorker() {
             @Override
             protected Object doInBackground() throws Exception {
                 if (selected_annotation == null)
@@ -375,7 +375,7 @@ public class GenomicAnnotationsPanel extends JXTable implements MouseListener {
                 }
                 return null;
             }
-        }.execute();
+        }.execute();*/
     }
 
     public GenomicAnnotationsPanel(final Mediator mediator) {
@@ -434,172 +434,6 @@ public class GenomicAnnotationsPanel extends JXTable implements MouseListener {
 
     public String getSelectedClass() {
         return (String)this.model.genomicAnnotations.get(this.convertRowIndexToModel(GenomicAnnotationsPanel.this.getSelectedRow())).get("class");
-    }
-
-    public void duplicateEntry() {
-        Date now = new Date();
-        String newAlignmentId = new ObjectId().toString();
-        BasicDBObject alignment = null;
-        for (AlignedMolecule alignedMolecule: this.mediator.getAlignmentCanvas().getMainAlignment().getAlignedMolecules()) {
-            INNER: for (BasicDBObject _ncRNA: model.genomicAnnotations) {
-                if (_ncRNA.get("_id").equals(alignedMolecule.getMolecule().getId())) {
-                    String newNcRNAId = new ObjectId().toString();
-                    BasicDBObject new_ncRNA = (BasicDBObject)_ncRNA.clone();
-                    if (alignment == null) {
-                        BasicDBObject query = new BasicDBObject();
-                        query.put("_id", ((String)_ncRNA.get("alignment")).split("@")[0]);
-                        alignment = (BasicDBObject)mediator.getGenomicMongo().getCollection("alignments").findOne(query);
-                    }
-                    new_ncRNA.put("_id", newNcRNAId);
-                    new_ncRNA.put("alignment", newAlignmentId+"@alignments");
-                    new_ncRNA.put("last_update", now.getTime());
-                    mediator.getGenomicMongo().getCollection("ncRNAs").insert(new_ncRNA);
-                    addRow(new_ncRNA);
-                    alignedMolecule.getMolecule().setId(newNcRNAId);
-                    //we create the Annotation object
-                    alignedMolecule.getMolecule().addAnnotation(new Annotation(new_ncRNA));
-                    break INNER;
-                }
-            }
-        }
-
-        BasicDBObject new_alignment = (BasicDBObject)alignment.clone();
-        new_alignment.put("_id", newAlignmentId);
-        new_alignment.put("last_update", now.getTime());
-        mediator.getGenomicMongo().getCollection("alignments").insert(new_alignment);
-        model.fireTableDataChanged();
-        mediator.getAlignmentCanvas().repaint();
-
-        JOptionPane.showMessageDialog(null, "Entry duplicated!!");
-    }
-
-    public void saveEntry() throws Exception {
-
-        java.util.List<Symbol> selection = mediator.getAlignmentCanvas().getMainAlignment().getBiologicalReferenceSequence().getSelection();
-        DBObject ncRNA = mediator.getGenomicMongo().getCollection("ncRNAs").findOne(new BasicDBObject("_id", mediator.getAlignmentCanvas().getMainAlignment().getBiologicalReferenceSequence().getMolecule().getId())),
-                alignment = mediator.getGenomicMongo().getCollection("alignments").findOne(new BasicDBObject("_id", ((String)ncRNA.get("alignment")).split("@")[0]));
-        BasicDBList genomicPositions = (BasicDBList)ncRNA.get("genomicPositions");
-
-        if (!selection.isEmpty() && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(null, "Are you sure to crop your ncRNA to the current selection?"))
-            return;
-
-        int firstIndex = -1,lastIndex = -1;
-        if (!selection.isEmpty()) {
-            firstIndex = mediator.getAlignmentCanvas().getMainAlignment().getBiologicalReferenceSequence().getIndex(selection.get(0));
-            lastIndex =  mediator.getAlignmentCanvas().getMainAlignment().getBiologicalReferenceSequence().getIndex(selection.get(selection.size()-1));
-        } else {
-            firstIndex = 0;
-            lastIndex = mediator.getAlignmentCanvas().getMainAlignment().getLength()-1;
-        }
-        StringBuffer clustalwOutput = new StringBuffer(),
-                consensus = new StringBuffer(),
-                sequence = null;
-
-        for (int i=firstIndex ; i <= lastIndex ; i++)
-            consensus.append(mediator.getAlignmentCanvas().getMainAlignment().getConsensusStructure().getSymbol(i).getSymbol());
-
-        //we test if the 2D is unbalanced before to save
-        if (mediator.getAlignmentCanvas().getMainAlignment().getConsensusStructure().isUnbalanced())
-            JOptionPane.showMessageDialog(null, "Your consensus 2D is unbalanced. Check the red characters!!");
-        else {
-            //if we reach this point, the 2D is not unbalanced. We can save the entry!!
-
-            Date now = new Date();
-
-            List<String> ncRNAs_to_remove = new ArrayList<String>();
-
-            for (AlignedMolecule alignedMolecule: mediator.getAlignmentCanvas().getMainAlignment().getAlignedMolecules()) {
-
-                ncRNA = mediator.getGenomicMongo().getCollection("ncRNAs").findOne(new BasicDBObject("_id", alignedMolecule.getMolecule().getId()));
-
-                if (ncRNA != null) { //some molecules can not be linked to any ncRNA in MongoDB
-
-                    sequence = new StringBuffer();
-
-                    for (int i=firstIndex ; i <= lastIndex ; i++)
-                        sequence.append(alignedMolecule.getSymbol(i).getSymbol());
-
-                    if (sequence.toString().replace("-","").trim().length() == 0) {//for the current interval, this ncRNA is only made with gaps => this is not a ncRNA hit anymore
-                        ncRNAs_to_remove.add((String)ncRNA.get("_id"));
-                        continue;
-                    }
-
-                    genomicPositions = new BasicDBList();
-
-                    if (alignedMolecule.getSymbol(firstIndex).getPositionInSequence() < alignedMolecule.getSymbol(lastIndex).getPositionInSequence()) {
-                        genomicPositions.add(alignedMolecule.getSymbol(firstIndex).getPositionInSequence());
-                        genomicPositions.add(alignedMolecule.getSymbol(lastIndex).getPositionInSequence());
-                    }
-                    else {
-                        genomicPositions.add(alignedMolecule.getSymbol(lastIndex).getPositionInSequence());
-                        genomicPositions.add(alignedMolecule.getSymbol(firstIndex).getPositionInSequence());
-                    }
-
-                    ncRNA.put("genomicPositions", genomicPositions);
-                    ncRNA.put("last_update", now.getTime());
-
-                    //we're searching for the BasicDBObject stored as model in the ncRNAsPanel and we update it also
-                    boolean found = false;
-                    for (BasicDBObject _ncRNA: model.genomicAnnotations) {
-                        if (_ncRNA.get("_id").equals(ncRNA.get("_id"))) {
-                            _ncRNA.put("genomicPositions", genomicPositions);
-                            _ncRNA.put("last_update", now.getTime());
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) //it is possible that a ncRNA has been removed from a previous save and needs now to be restored
-                        addRow((BasicDBObject)ncRNA);
-
-                    //we update the Annotation object
-                    for (Annotation a: alignedMolecule.getMolecule().getAnnotations()) {
-                        if (a.get_id().equals(ncRNA.get("_id"))) {
-                            a.setStart((Integer)genomicPositions.get(0));
-                            a.setEnd((Integer)genomicPositions.get(1));
-                            break;
-                        }
-                    }
-
-                    mediator.getGenomicMongo().getCollection("ncRNAs").save(ncRNA);
-                }
-
-            }
-
-            //we remove from the ncRNAsPanel the ncRNAs to be removed
-            for (BasicDBObject _ncRNA: model.genomicAnnotations) {
-                if (ncRNAs_to_remove.contains(_ncRNA.get("_id"))) {
-                    model.genomicAnnotations.remove(_ncRNA);
-                    break;
-                }
-            }
-
-            int c = 0;
-            while (c < lastIndex-firstIndex+1) {
-                int d = Math.min(lastIndex-firstIndex+1, c + 60);
-                for (AlignedMolecule alignedMolecule: mediator.getAlignmentCanvas().getMainAlignment().getAlignedMolecules())
-                    if (mediator.getGenomicMongo().getCollection("ncRNAs").findOne(new BasicDBObject("_id", alignedMolecule.getMolecule().getId())) == null)
-                        clustalwOutput.append(alignedMolecule.getMolecule().getName()+"\t"+alignedMolecule.getSequence(firstIndex, lastIndex).substring(c,d)+'\n');
-                    else
-                        clustalwOutput.append(alignedMolecule.getMolecule().getId()+"\t"+alignedMolecule.getSequence(firstIndex, lastIndex).substring(c,d)+'\n');
-                clustalwOutput.append('\n');
-                c += 60;
-            }
-
-            clustalwOutput.append("2D\t"+mediator.getAlignmentCanvas().getMainAlignment().getConsensusStructure().getSequence(firstIndex, lastIndex));
-
-            alignment.put("alignment", clustalwOutput.toString());
-            alignment.put("last_update", now.getTime());
-
-            mediator.getGenomicMongo().getCollection("alignments").save(alignment);
-
-            model.fireTableDataChanged();
-
-            mediator.getAlignmentCanvas().repaint();
-
-            JOptionPane.showMessageDialog(null, "Entry saved!!");
-        }
-
     }
 
     public boolean isSelected(Molecule m) {

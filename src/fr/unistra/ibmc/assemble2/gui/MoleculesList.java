@@ -244,10 +244,10 @@ public class MoleculesList extends JXTable implements MouseListener, DragSourceL
         });
         this.popupMenu.add(menuItem);
 
-        menuItem = new JMenuItem("Create new Annotation..."){
+        /*menuItem = new JMenuItem("Create new Annotation..."){
             public void paintComponent(Graphics graphics) {
                 List<Symbol> selection = mediator.getAlignmentCanvas().getMainAlignment().getBiologicalReferenceSequence().getSelection();
-                this.setEnabled(MoleculesList.this.getSelectedRows().length == 1 && MoleculesList.this.getSelectedRows()[0] == 0 && !selection.isEmpty() && mediator.getMongo() != null && mediator.getAlignmentCanvas().getMainAlignment().getBiologicalReferenceSequence().getMolecule().isGenomicAnnotation());
+                this.setEnabled(MoleculesList.this.getSelectedRows().length == 1 && MoleculesList.this.getSelectedRows()[0] == 0 && !selection.isEmpty() &&  mediator.getAlignmentCanvas().getMainAlignment().getBiologicalReferenceSequence().getMolecule().isGenomicAnnotation());
                 super.paintComponent(graphics);
             }
         };
@@ -378,7 +378,7 @@ public class MoleculesList extends JXTable implements MouseListener, DragSourceL
                     }
                 }.execute();
             }
-        });
+        });*/
 
         //this.popupMenu.add(menuItem);
 

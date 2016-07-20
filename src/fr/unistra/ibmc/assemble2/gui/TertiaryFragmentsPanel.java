@@ -106,7 +106,7 @@ public class TertiaryFragmentsPanel extends JXTable implements MouseListener {
         });
         //this.popupMenu.add(menuItem);
 
-        menuItem = new JMenuItem("Display in Initial Structure") {
+       /* menuItem = new JMenuItem("Display in Initial Structure") {
             public void paintComponent(Graphics graphics) {
                 this.setEnabled(TertiaryFragmentsPanel.this.getSelectedRows().length == 1);
                 super.paintComponent(graphics);
@@ -153,7 +153,7 @@ public class TertiaryFragmentsPanel extends JXTable implements MouseListener {
                 }.execute();
             }
         });
-        //this.popupMenu.add(menuItem);
+        this.popupMenu.add(menuItem);*/
 
     }
 

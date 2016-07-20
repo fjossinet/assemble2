@@ -470,12 +470,17 @@ public class FileParser {
                     fastaData.append(_m.printSequence() + "\n");
                 }
                 if (Mlocarna.useForFoldingLandscape) {
-                    Pair<Pair<String, List<SecondaryStructure>>, List<AlignedMolecule>> result = new Mlocarna(mediator).align(fastaData.toString(), null);
-                    for (SecondaryStructure ss : result.getFirst().getSecond())
-                        if (ss.getMolecule().getName().equals(m.getName().replaceAll("\\s", "_"))) {
-                            secondaryStructures.add(ss);
-                            break;
-                        }
+                    try {
+                        Pair<Pair<String, List<SecondaryStructure>>, List<AlignedMolecule>> result = new Mlocarna(mediator).align(fastaData.toString(), null);
+                        for (SecondaryStructure ss : result.getFirst().getSecond())
+                            if (ss.getMolecule().getName().equals(m.getName().replaceAll("\\s", "_"))) {
+                                secondaryStructures.add(ss);
+                                break;
+                            }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
                 }
 
             } else {
@@ -851,19 +856,6 @@ public class FileParser {
             Molecule m = new Molecule(alignedMolecule.getKey(), alignedMolecule.getValue().toString().replace("-",""));
             if (ObjectId.isValid(alignedMolecule.getKey())) {//if the name of the molecule in the clustalw content is a valid ObjectId string, it becomes the id of the Molecule object
                 m.setId(alignedMolecule.getKey());
-                if (mediator.getGenomicMongo() != null) {
-                    BasicDBObject query = new BasicDBObject();
-                    query.put("_id", alignedMolecule.getKey());
-                    DBObject hit = mediator.getGenomicMongo().getCollection("ncRNAs").findOne(query);
-                    if (hit != null) {
-                        m.setOrganism((String)hit.get("organism"));
-                        m.setPlusOrientation(hit.get("genomicStrand").equals("+"));
-                        BasicDBList genomicPositions = (BasicDBList)hit.get("genomicPositions");
-                        m.setFivePrimeEndGenomicPosition((Integer)genomicPositions.get(0));
-                        if (hit.get("genome") != null) //a ncRNA can have genomic details (positions, strand,...), but not linked to a genome stored in the DB
-                            m.isGenomicAnnotation(true);
-                    }
-                }
             }
             AlignedMolecule bs = new AlignedMolecule(mediator, m, alignedMolecule.getValue().toString());
             if (alignedMolecule.getKey().equals(referenceMoleculeId))

@@ -22,7 +22,7 @@ public class DataHandler extends Computation {
         List<Residue3D> residue3Ds = new ArrayList<Residue3D>();
         JsonObject molecule = null, tertiaryStructure = null;
         JsonParser jsonParser = new JsonParser();
-        if (this.mediator.getMongo() == null) { //if no MongoDB linked to Assemble2, we use the webservices
+        if (!AssembleConfig.useLocalAlgorithms()) {
             Map<String,String> data = new Hashtable<String,String>();
             data.put("coll","tertiaryStructures");
             data.put("id",tertiaryStructureId);
@@ -73,7 +73,7 @@ public class DataHandler extends Computation {
         JsonParser jsonParser = new JsonParser();
         JsonObject tertiaryStructure = null, molecule = null;
 
-        if (this.mediator.getPDBMongo() == null) { //if no MongoDB linked to Assemble2, we use the webservices
+        if (!AssembleConfig.useLocalAlgorithms()) {
 
             Map<String,String> data = new Hashtable<String,String>();
             data.put("coll","tertiaryStructures");
@@ -97,9 +97,9 @@ public class DataHandler extends Computation {
 
         } else {
             BasicDBObject query = new BasicDBObject("_id", tertiaryStructureId);
-            tertiaryStructure = jsonParser.parse(mediator.getPDBMongo().getCollection("tertiaryStructures").find(query).iterator().next().toString()).getAsJsonObject();
+            tertiaryStructure = jsonParser.parse(mediator.get3DMongo().getCollection("tertiaryStructures").find(query).iterator().next().toString()).getAsJsonObject();
             query = new BasicDBObject("_id", moleculeId);
-            molecule = jsonParser.parse(mediator.getPDBMongo().getCollection("ncRNAs").find(query).iterator().next().toString()).getAsJsonObject();
+            molecule = jsonParser.parse(mediator.get3DMongo().getCollection("ncRNAs").find(query).iterator().next().toString()).getAsJsonObject();
         }
 
         Molecule rna = new Molecule(molecule.get("name").getAsString(),molecule.get("sequence").getAsString());
@@ -127,7 +127,7 @@ public class DataHandler extends Computation {
         JsonParser jsonParser = new JsonParser();
         JsonArray junctions = null;
 
-        if (this.mediator.getPDBMongo() == null) { //if no MongoDB linked to Assemble2, we use the webservices
+        if (!AssembleConfig.useLocalAlgorithms()) { //connection to a remote MongoDB through Webservices
             Map<String,String> data = new Hashtable<String,String>();
             data.put("coll","junctions");
             data.put("query","{\"location\":{\"$size\":"+query.size()+"}}");
@@ -147,10 +147,10 @@ public class DataHandler extends Computation {
                     result = this.postData("rna3dhub", data);
                 junctions = jsonParser.parse(result).getAsJsonArray();
             }
-        } else {
+        } else {//connection to a local MongoDB
             BasicDBObject _query = new BasicDBObject("crown", new BasicDBObject("$size",query.size()));
             junctions = new JsonArray();
-            Iterator<DBObject> it = mediator.getPDBMongo().getCollection("junctions").find(_query).iterator();
+            Iterator<DBObject> it = mediator.get3DMongo().getCollection("junctions").find(_query).iterator();
             while (it.hasNext())
                 junctions.add(jsonParser.parse(it.next().toString()));
         }
@@ -209,7 +209,7 @@ public class DataHandler extends Computation {
         JsonArray junctions = null;
         JsonParser jsonParser = new JsonParser();
 
-        if (this.mediator.getPDBMongo() == null) { //if no MongoDB linked to Assemble2, we use the webservices
+        if (!AssembleConfig.useLocalAlgorithms()) {
             Map<String,String> data = new Hashtable<String,String>();
             data.put("coll","junctions");
             String result = null;
@@ -220,7 +220,7 @@ public class DataHandler extends Computation {
             junctions = jsonParser.parse(result).getAsJsonArray();
         } else {
             junctions = new JsonArray();
-            Iterator<DBObject> it = mediator.getPDBMongo().getCollection("junctions").find().iterator();
+            Iterator<DBObject> it = mediator.get3DMongo().getCollection("junctions").find().iterator();
             while (it.hasNext())
                 junctions.add(jsonParser.parse(it.next().toString()));
         }
