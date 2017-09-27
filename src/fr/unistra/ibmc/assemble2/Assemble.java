@@ -1309,7 +1309,7 @@ public class Assemble extends Application implements SelectionTransmitter {
         timer.setRepeats(false);
         timer.start();
 
-        if (!isServerReachable())
+        if (!AssembleConfig.useLocalAlgorithms() && !isServerReachable())
             JOptionPane.showMessageDialog(Assemble.this.window,
                     "Cannot reach "+AssembleConfig.getWebservicesAddress().get(0),
                     "Server unreachable",
@@ -2123,7 +2123,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             };
             item.setIcon(new SaveIcon());
-            saveProject.add(item);
+            //saveProject.add(item);
 
             item.addActionListener(new ActionListener() {
                 public void actionPerformed(final java.awt.event.ActionEvent actionEvent) {
@@ -2525,16 +2525,16 @@ public class Assemble extends Application implements SelectionTransmitter {
                 public void actionPerformed(final java.awt.event.ActionEvent actionEvent) {
                     List<JComponent> inputs = new ArrayList<JComponent>();
 
-                    inputs.add(new JLabel("Assemble ID: "+AssembleConfig.getID()));
+                    //inputs.add(new JLabel("Assemble ID: "+AssembleConfig.getID()));
 
-                    JButton b = new JButton("Link to your account");
+                    /*JButton b = new JButton("Link to your account");
                     inputs.add(b);
                     b.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
                             IoUtils.openBrowser(AssembleConfig.getWebservicesAddress().get(0)+"/account?tool_name=Assemble2&tool_id="+AssembleConfig.getID());
                         }
-                    });
+                    });*/
 
                     inputs.add(new JLabel("Chimera Executable"));
                     final JTextField chimeraExecutable = new JTextField(AssembleConfig.getChimeraPath());
@@ -2544,7 +2544,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                     final JComboBox webServiceAddresses = new JComboBox(AssembleConfig.getWebservicesAddress().toArray(new String[]{}));
                     inputs.add(webServiceAddresses);
 
-                    b = new JButton("Add new Address");
+                    JButton b = new JButton("Add new Address");
                     inputs.add(b);
                     b.addActionListener(new ActionListener() {
                         @Override
@@ -2589,23 +2589,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                     inputs.add(panel);
 
                     if (JOptionPane.OK_OPTION ==  JOptionPane.showConfirmDialog(null, inputs.toArray(new JComponent[]{}), "Configuration", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE)) {
-                        String param = ((String)webServiceAddresses.getSelectedItem()).trim();
-                        if (param != null) {
-                            AssembleConfig.setCurrentWebservicesAddress(param.trim());
-                            if (!isServerReachable())
-                                JOptionPane.showMessageDialog(Assemble.this.window,
-                                        "Cannot reach " + AssembleConfig.getWebservicesAddress().get(0),
-                                        "Server unreachable",
-                                        JOptionPane.WARNING_MESSAGE);
-                            else
-                                openWebSocket();
 
-                        }
-
-                        String previousChimeraPath = AssembleConfig.getChimeraPath();
-                        param = chimeraExecutable.getText().trim();
-                        if (param != null && param.trim().length() != 0)
-                            AssembleConfig.setChimeraPath(param.trim());
 
                         AssembleConfig.useLocalAlgorithms(useLocalAlgorithms.isSelected());
 
@@ -2614,6 +2598,24 @@ public class Assemble extends Application implements SelectionTransmitter {
                         AssembleConfig.setFragmentsLibrary((String)fragmentsLibrary.getSelectedItem());
 
                         AssembleConfig.popupLateralPanels(popupLateralPanels.isSelected());
+
+                        String param = ((String)webServiceAddresses.getSelectedItem()).trim();
+                        if (param != null) {
+                            AssembleConfig.setCurrentWebservicesAddress(param.trim());
+                            if (!AssembleConfig.useLocalAlgorithms() && !isServerReachable())
+                                JOptionPane.showMessageDialog(Assemble.this.window,
+                                        "Cannot reach " + AssembleConfig.getWebservicesAddress().get(0),
+                                        "Server unreachable",
+                                        JOptionPane.WARNING_MESSAGE);
+                            else if (!AssembleConfig.useLocalAlgorithms())
+                                openWebSocket();
+
+                        }
+
+                        String previousChimeraPath = AssembleConfig.getChimeraPath();
+                        param = chimeraExecutable.getText().trim();
+                        if (param != null && param.trim().length() != 0)
+                            AssembleConfig.setChimeraPath(param.trim());
 
                         try {
                             AssembleConfig.saveConfig();
@@ -3742,7 +3744,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             ex.printStackTrace();
         }
 
-        if (args.length == 0 || !"start".equals(args[0])) {
+        if (/*args.length == 0 || !"start".equals(args[0])*/false) {
             JOptionPane.showMessageDialog(null,"To start Assemble, double-click on one of the launch files in the Assemble directory.");
             System.exit(0);
         }

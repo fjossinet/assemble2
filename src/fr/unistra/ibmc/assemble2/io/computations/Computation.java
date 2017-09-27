@@ -78,7 +78,7 @@ abstract public class Computation {
             boolean ok = result.trim().matches("^Docker version.+$");
             if (!ok) {
                 JOptionPane.showMessageDialog(null,
-                        "Your need to install Docker",
+                        "You need to install Docker",
                         "Docker missing",
                         JOptionPane.WARNING_MESSAGE);
                 IoUtils.openBrowser("https://www.docker.com");
@@ -86,7 +86,7 @@ abstract public class Computation {
             return ok;
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null,
-                    "Your need to install Docker",
+                    "You need to install Docker",
                     "Docker missing",
                     JOptionPane.WARNING_MESSAGE);
             IoUtils.openBrowser("https://www.docker.com");

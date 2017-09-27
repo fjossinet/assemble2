@@ -101,7 +101,7 @@ public class WelcomeDialog extends JDialog {
     }
 
     private void createUIComponents() {
-        this.assemble2Logo = new JLabel(new ImageIcon(RessourcesUtils.getImage("logo3.png")));
+        this.assemble2Logo = new JLabel(new ImageIcon(RessourcesUtils.getImage("logo4.png")));
         this.welcomeMessage = new JLabel("Thank you for using Assemble2. What do you plan to do?");
         this.welcomeMessage.setFont(new Font(this.welcomeMessage.getName(), Font.BOLD, 20));
     }

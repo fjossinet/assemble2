@@ -9,7 +9,6 @@ import fr.unistra.ibmc.assemble2.model.*;
 import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
 import fr.unistra.ibmc.assemble2.utils.IoUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
-import org.codehaus.groovy.transform.powerassert.SourceText;
 
 import java.io.*;
 import java.util.*;
@@ -30,7 +29,9 @@ public class Rnaview extends Computation {
                 Process p = pb.start();
                 p.waitFor();
                 SecondaryStructure ss = FileParser.parseRnaml(new File(temp.getParent(), temp.getName()+".xml"), mediator);
-                System.out.println(ss);
+                ss.setLinkedTs(ts);
+                ss.setName("Computed with RNAVIEW");
+                //TODO check if RNAVIEW has modified the RNA -> newTS (see below)
                 return ss;
             }
             return null;
