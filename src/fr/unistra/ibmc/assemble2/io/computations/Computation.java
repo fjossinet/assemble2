@@ -64,7 +64,7 @@ abstract public class Computation {
 
     protected boolean isDockerInstalled() {
         try {
-            ProcessBuilder pb = new ProcessBuilder("docker", "-v");
+            ProcessBuilder pb = new ProcessBuilder("which", "docker");
             Process p = pb.start();
             BufferedReader reader =
                     new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -75,7 +75,7 @@ abstract public class Computation {
                 builder.append(System.getProperty("line.separator"));
             }
             String result = builder.toString();
-            boolean ok = result.trim().matches("^Docker version.+$");
+            boolean ok = result.trim().matches("^.+docker$");
             if (!ok) {
                 JOptionPane.showMessageDialog(null,
                         "You need to install Docker",

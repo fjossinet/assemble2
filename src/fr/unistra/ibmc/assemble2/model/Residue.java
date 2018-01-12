@@ -283,9 +283,9 @@ public class Residue implements Comparable {
             drawStringCentered(g, "" + this.getSymbol(), this.getCurrentCenterX(gc), this.getCurrentCenterY(gc), gc);
             g.setColor(Color.BLACK);
             Residue nextR = this.getNextResidue(), previousR = this.getPreviousResidue();
-            if (nextR != null && previousR == null)
+            if (nextR != null && previousR == null && gc.isDisplayPositions())
                 g.drawString("5'", (float) (this.getCurrentX(gc) - (nextR.getCurrentX(gc) - this.getCurrentX(gc))), (float) (this.getCurrentY(gc) - (nextR.getCurrentY(gc) - this.getCurrentY(gc))));
-            else if (previousR != null && nextR == null)
+            else if (previousR != null && nextR == null && gc.isDisplayPositions()               )
                 g.drawString("3'", (float) (this.getCurrentX(gc) + this.getCurrentX(gc) - previousR.getCurrentX(gc)), (float) (this.getCurrentY(gc) + this.getCurrentY(gc) - previousR.getCurrentY(gc)));
             if (this.isSelected() && gc.isDrawOnlySelectedMotif()) {
                 //if the previous or next residue are not exported in the motif capture, we display the id of this residue

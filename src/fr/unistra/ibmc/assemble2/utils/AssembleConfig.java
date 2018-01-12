@@ -1,6 +1,5 @@
 package fr.unistra.ibmc.assemble2.utils;
 
-import fr.unistra.ibmc.assemble2.gui.Mediator;
 import fr.unistra.ibmc.assemble2.model.StructuralAlignment;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.bson.types.ObjectId;
@@ -357,7 +356,7 @@ public class AssembleConfig {
         Element e = document.getRootElement().getChild("launch-chimera");
         if (e == null) {
             e = new Element("launch-chimera");
-            e.setText("true");
+            e.setText("false");
             document.getRootElement().addContent(e);
         }
         return new Boolean(e.getTextTrim());

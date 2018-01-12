@@ -265,7 +265,7 @@ public class TertiaryStructureToolBar implements ToolBar {
                     new ChimeraDriver(mediator);
                     mediator.getSecondaryCanvas().repaint(); //to activate some icons if there was no Chimera driver so far...
                     try {
-                        if (mediator.getAssemble().getCurrentAssembleProject() != null) {
+                        if (mediator.getAssemble().getCurrentAssembleProject() != null && mediator.getChimeraDriver() != null) {
                             mediator.getChimeraDriver().restoreSession(mediator.getAssemble().getCurrentAssembleProject().getChimeraSession());
                             mediator.getChimeraDriver().synchronizeFrom();
                         }
@@ -275,6 +275,7 @@ public class TertiaryStructureToolBar implements ToolBar {
                         e1.printStackTrace();
                     }
                 }
+                //mediator.getSecondaryCanvas().demoMode();
                 return;
             }
             startY += buttonShape.getHeight()+10;

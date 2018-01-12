@@ -1,6 +1,5 @@
 package fr.unistra.ibmc.assemble2.model;
 
-import com.sun.xml.internal.rngom.parse.host.Base;
 import fr.unistra.ibmc.assemble2.gui.GraphicContext;
 import fr.unistra.ibmc.assemble2.gui.Mediator;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -508,6 +507,13 @@ public class SecondaryStructure {
         for (SingleStrand ss:this.singleStrands)
             if (ss.getLocation().hasPosition(residue.getAbsolutePosition()))
                 return ss;
+        return null;
+    }
+
+    public Junction getEnclosingJunction(Residue residue) {
+        for (Junction j: this.junctions)
+            if (j.hasPosition(residue.getAbsolutePosition()))
+                return j;
         return null;
     }
 

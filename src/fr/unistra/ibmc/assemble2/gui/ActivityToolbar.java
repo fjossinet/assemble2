@@ -1,6 +1,5 @@
 package fr.unistra.ibmc.assemble2.gui;
 
-
 import com.sun.javafx.application.PlatformImpl;
 import fr.unistra.ibmc.assemble2.Assemble;
 import fr.unistra.ibmc.assemble2.gui.components.MessagingSystemAction;
@@ -23,7 +22,6 @@ import org.controlsfx.glyphfont.GlyphFontRegistry;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
-import java.awt.Button;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;

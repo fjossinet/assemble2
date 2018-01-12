@@ -52,6 +52,7 @@ public class ChimeraDriver extends AbstractTertiaryViewerDriver {
                 closeActions.add(null);
                 mediator.getSecondaryCanvas().getMessagingSystem().addThread(texts, closeActions, nextActions);
                 mediator.getSecondaryCanvas().repaint();
+                mediator.setChimeraDriver(null);
             }
         }
     }
@@ -166,6 +167,10 @@ public class ChimeraDriver extends AbstractTertiaryViewerDriver {
             commandInput.println("write format pdb "+modelID+" " + f.getAbsolutePath());
         Thread.sleep(3000);
         mediator.getAssemble().loadTertiaryStructures(FileParser.parsePDB(mediator, new FileReader(f)));
+    }
+
+    public void turny(int angle) {
+        this.evaluate("turn y 1 "+angle);
     }
 
     public void synchronizeFrom() throws Exception {

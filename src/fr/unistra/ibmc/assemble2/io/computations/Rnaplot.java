@@ -38,6 +38,8 @@ public class Rnaplot extends Computation {
             scriptFile.setExecutable(true);
             if (isDockerInstalled() && isAssemble2DockerImageInstalled()) {
 
+                System.out.println("docker run -v "+dataFile.getParent()+":/data fjossinet/assemble2 /data/"+scriptFile.getName());
+
                 ProcessBuilder pb = new ProcessBuilder("docker", "run", "-v", dataFile.getParent()+":/data", "fjossinet/assemble2", "/data/"+scriptFile.getName());
                 Process p = pb.start();
                 p.waitFor();

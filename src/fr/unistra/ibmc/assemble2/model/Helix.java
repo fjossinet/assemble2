@@ -106,6 +106,8 @@ public class Helix extends AbstractStructuralDomain {
         //if no more than two bases, nothing to do
         if (this.getLength() > 2) {
             Residue base5 = this.get5PrimeEnds()[0], base3 = this.get3PrimeEnd(base5);
+            base5.isUpdated(true); //to recompute its secondary interaction
+            base3.isUpdated(true); //to recompute its secondary interaction
             double length = DrawingUtils.getDistance(base5.getRealCoordinates(), base3.getRealCoordinates());
             Residue base5_0 = base5.getNextResidue();
             int i = 1;
@@ -115,7 +117,9 @@ public class Helix extends AbstractStructuralDomain {
                 i++;
             }
             base5 = this.getPairedResidue(base3);
+            base5.isUpdated(true); //to recompute its secondary interaction
             base3 = this.get3PrimeEnd(base5);
+            base3.isUpdated(true); //to recompute its secondary interaction
             base5_0 = base5.getNextResidue();
             i = 1;
             while (base5_0.getAbsolutePosition() < base3.getAbsolutePosition()) {

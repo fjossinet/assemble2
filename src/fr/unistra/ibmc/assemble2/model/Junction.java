@@ -58,4 +58,12 @@ public class Junction {
         return structuralDomains;
     }
 
+    public List<Residue> getResidues() {
+        List<Residue> residues = new ArrayList<Residue>();
+        for (MutablePair<Molecule,Location> p:getFragments())
+            for (int pos:p.right.getSinglePositions())
+                residues.add(this.ss.getResidue(pos));
+        return residues;
+    }
+
 }

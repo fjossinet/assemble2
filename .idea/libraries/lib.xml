@@ -1,0 +1,38 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/dsn.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-test.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/rome-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gimap.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/AppFramework.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/controlsfx-8.20.8.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mongo-2.6.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-lang3-3.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-io-1.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/pop3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/swing-worker-1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/Shell.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-reflect.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jaxen.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mydoggy-res-1.4.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/swingx-0.9.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gson-2.2.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-collections-3.2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mydoggy-plaf-1.4.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mydoggy-api-1.4.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mailapi.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/kotlin-stdlib-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jdom.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/java_websocket.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/imap.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/batik-cutdown.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/TableLayout-20050920.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/smtp.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/miglayout-3.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

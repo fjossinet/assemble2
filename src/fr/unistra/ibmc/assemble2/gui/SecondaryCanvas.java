@@ -4,14 +4,14 @@ import fr.unistra.ibmc.assemble2.Assemble;
 import fr.unistra.ibmc.assemble2.gui.components.MessagingSystemAction;
 import fr.unistra.ibmc.assemble2.gui.components.ToolTip;
 import fr.unistra.ibmc.assemble2.gui.components.SecondaryCanvasMessagingSystem;
+import fr.unistra.ibmc.assemble2.io.FileParser;
+import fr.unistra.ibmc.assemble2.io.Modeling3DException;
 import fr.unistra.ibmc.assemble2.io.computations.DataHandler;
 import fr.unistra.ibmc.assemble2.io.computations.Rnaplot;
 import fr.unistra.ibmc.assemble2.model.*;
 import fr.unistra.ibmc.assemble2.model.Button;
 import fr.unistra.ibmc.assemble2.model.TertiaryFragmentHit;
-import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
-import fr.unistra.ibmc.assemble2.utils.DrawingUtils;
-import fr.unistra.ibmc.assemble2.utils.Pair;
+import fr.unistra.ibmc.assemble2.utils.*;
 import org.apache.commons.lang3.tuple.MutablePair;
 
 import javax.swing.*;
@@ -22,9 +22,14 @@ import java.awt.event.MouseWheelListener;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class SecondaryCanvas extends JPanel implements CanvasInterface, MouseWheelListener, java.awt.event.MouseListener, java.awt.event.MouseMotionListener {
 
@@ -615,7 +620,8 @@ public class SecondaryCanvas extends JPanel implements CanvasInterface, MouseWhe
                         this.select(r.getSecondaryInteraction().getResidue());
                         this.select(r.getSecondaryInteraction().getPartnerResidue());
                         this.selectedBaseBaseInteraction = r.getSecondaryInteraction();
-                    } else if (!r.getStructuralDomain().isSelected() && Helix.class.isInstance(r.getStructuralDomain())) {
+                    }
+                    else if (!r.getStructuralDomain().isSelected() && Helix.class.isInstance(r.getStructuralDomain())) {
                         this.selectHelix((Helix) r.getStructuralDomain());
                         if (Assemble.HELP_MODE) {
                             java.util.List<String> texts = new ArrayList<String>();
@@ -813,6 +819,95 @@ public class SecondaryCanvas extends JPanel implements CanvasInterface, MouseWhe
                     return;
                 }
         }
+    }
+
+
+    /**
+     * This demo mode constructs automatically a 3D model by choosing randomly 3D fragments. This mode has been created to produce movies for ads about Assemble2.
+     */
+    private int demoStart = 4;
+    public void demoMode() {
+        new SwingWorker() {
+            @Override
+            protected Object doInBackground() {
+                int i = demoStart;
+                while (i < demoStart+6) {
+                    if (i ==7) {
+                        i++;
+                        continue;
+                    }
+                    for (Helix h : mediator.getSecondaryStructure().getHelices()) {
+                        clearSelection();
+                        selectedHelix = h;
+                        for (Residue _r : selectedHelix.getResidues())
+                            select(_r);
+                        repaint();
+                        generate3DResidues();
+                        try {
+                            TimeUnit.SECONDS.sleep(1);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                        clearSelection();
+                        selectedJunction = (Junction) mediator.getSecondaryStructure().getEnclosingJunction(h.get3PrimeEnds()[0].getNextResidue());
+                        for (Residue _r : selectedJunction.getResidues())
+                            select(_r);
+                        repaint();
+                        List<String> query = new ArrayList<String>();
+                        for (MutablePair<Molecule, Location> fragment : selectedJunction.getFragments()) {
+                            if (fragment.right.getLength() == 2) //two helices directy linked
+                                query.add("-");
+                            else {
+                                if (fragment.right.getLength() == 3)
+                                    query.add("^[AUGC]$"); //"^.$" is not good since this also means "-"
+                                else
+                                    query.add("^.{" + (fragment.right.getLength() - 2) + "}$");
+                            }
+                        }
+                        try {
+                            List<TertiaryFragmentHit> tertiaryFragmentHits = new DataHandler(mediator).findJunctions(query);
+                            mediator.getTertiaryFragmentsPanel().clearList();
+                            for (TertiaryFragmentHit hit : tertiaryFragmentHits)
+                                mediator.getTertiaryFragmentsPanel().addRow(hit);
+                            int j = i < mediator.getTertiaryFragmentsPanel().length() ? i : mediator.getTertiaryFragmentsPanel().length();
+                            mediator.getTertiaryFragmentsPanel().setRowSelectionInterval(j, j);
+                            generate3DResidues();
+                            try {
+                                TimeUnit.SECONDS.sleep(1);
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            }
+                        } catch (Exception e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                    try {
+                        if (mediator.getChimeraDriver() != null) {
+                            mediator.getChimeraDriver().synchronizeFrom();
+                            mediator.getChimeraDriver().synchronizeTo();
+
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    try {
+                        List<String> positions = new ArrayList<String>(1);
+                        for (Residue _r : mediator.getSecondaryStructure().getResidues())
+                            positions.add(mediator.getTertiaryStructure() != null && mediator.getTertiaryStructure().getResidue3DAt(_r.getAbsolutePosition()) != null ? mediator.getTertiaryStructure().getResidue3DAt(_r.getAbsolutePosition()).getLabel() : "" + _r.getAbsolutePosition());
+                        if (mediator.getChimeraDriver() != null) {
+                            mediator.getChimeraDriver().setFocus(positions);
+                            mediator.getChimeraDriver().turny(360);
+                        }
+                        TimeUnit.SECONDS.sleep(10);
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
+                    i += 1;
+                }
+                demoStart = i;
+                return null;
+            }
+        }.execute();
     }
 
     public GraphicContext getGraphicContext() {
@@ -1214,5 +1309,354 @@ public class SecondaryCanvas extends JPanel implements CanvasInterface, MouseWhe
         this.getGraphicContext().viewX -= minX-2*this.gc.getCurrentWidth();
         this.getGraphicContext().viewY -= minY-2*this.gc.getCurrentHeight();
         this.repaint();
+    }
+
+    public void generate3DResidues() {
+        try {
+            List<Residue3D> computedResidues = null;
+            boolean firstFragment = false;
+            if (mediator.getTertiaryStructure() == null) {
+                TertiaryStructure ts = new TertiaryStructure(mediator.getSecondaryStructure().getMolecule());
+                mediator.setTertiaryStructure(ts);
+                mediator.getSecondaryStructure().setLinkedTs(ts);
+                firstFragment = true;
+            } else if (mediator.getTertiaryStructure().getResidues3D().isEmpty()) {
+                firstFragment = true;
+            }
+            List<Residue3D> previousResidues = mediator.getTertiaryStructure().getResidues3D();
+            TertiaryStructure ts = mediator.getTertiaryStructure();
+            if (mediator.getSecondaryCanvas().getSelectedHelix() != null) {  // the fold is generated de novo
+                computedResidues = fr.unistra.ibmc.assemble2.utils.Modeling3DUtils.compute3DHelix(mediator, ts,mediator.getSecondaryCanvas().getSelectedHelix().getLocation());
+                if (computedResidues.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Problem to generate the new 3D residues!!");
+                    return;
+                }
+                File tmpPDB = IoUtils.createTemporaryFile("model.pdb");
+                try {
+                    Collections.sort(computedResidues, new Comparator<Residue3D>() {
+                        public int compare(Residue3D residue, Residue3D residue1) {
+                            return residue.getAbsolutePosition() - residue1.getAbsolutePosition();
+                        }
+                    });
+                    FileParser.writePDBFile(computedResidues, false, new FileWriter(tmpPDB));
+                    int anchorResidue1 = -1,anchorResidue2 = -1;
+                    Residue[] _5PrimeEnds = mediator.getSecondaryCanvas().getSelectedHelix().get5PrimeEnds();
+                    int previous = _5PrimeEnds[0].getAbsolutePosition();
+                    int pairedPrevious = mediator.getSecondaryStructure().getPairedResidueInSecondaryInteraction(mediator.getSecondaryStructure().getResidue(previous)) != null ? mediator.getSecondaryStructure().getPairedResidueInSecondaryInteraction(mediator.getSecondaryStructure().getResidue(previous)).getAbsolutePosition() : -1;
+                    for (Residue3D previousRes: previousResidues) {
+                        if (previousRes.getAbsolutePosition() == previous)
+                            anchorResidue1 = previous;
+                        else if  (previousRes.getAbsolutePosition() == pairedPrevious)
+                            anchorResidue2 = pairedPrevious;
+                    }
+
+                    if (anchorResidue1 == -1 && anchorResidue2 == -1) {
+                        previous = _5PrimeEnds[1].getAbsolutePosition();
+                        pairedPrevious = mediator.getSecondaryStructure().getPairedResidueInSecondaryInteraction(mediator.getSecondaryStructure().getResidue(previous)) != null ? mediator.getSecondaryStructure().getPairedResidueInSecondaryInteraction(mediator.getSecondaryStructure().getResidue(previous)).getAbsolutePosition() : -1;
+                        for (Residue3D previousRes:previousResidues) {
+                            if (previousRes.getAbsolutePosition() == previous)
+                                anchorResidue1 = previous;
+                            else if  (previousRes.getAbsolutePosition() == pairedPrevious)
+                                anchorResidue2 = pairedPrevious;
+                        }
+                    }
+
+                    if (mediator.getChimeraDriver() != null && (anchorResidue1 == -1 && anchorResidue2 == -1 && firstFragment || anchorResidue1 != -1 || anchorResidue2 != -1))
+                        mediator.getChimeraDriver().addFragment(tmpPDB, computedResidues, anchorResidue1, anchorResidue2, firstFragment); //even if no anchor residues found, we generate the helix.
+                    else if (anchorResidue1 == -1 && anchorResidue2 == -1) {
+                        StringBuffer residuesNeeded = new StringBuffer();
+                        if (_5PrimeEnds[0].getAbsolutePosition()-1 > 0)
+                            residuesNeeded.append(_5PrimeEnds[0].getAbsolutePosition() - 1 + ", ");
+                        if (previous > 0)
+                            residuesNeeded.append(previous + ", ");
+                        int pos = mediator.getSecondaryStructure().getPairedResidueInSecondaryInteraction(mediator.getSecondaryStructure().getResidue(_5PrimeEnds[0].getAbsolutePosition())).getAbsolutePosition()+1;
+                        if (pos <= mediator.getSecondaryStructure().getMolecule().size())
+                            residuesNeeded.append(pos + ", ");
+                        if (pairedPrevious <= mediator.getSecondaryStructure().getMolecule().size())
+                            residuesNeeded.append(pairedPrevious);
+                        if (residuesNeeded.charAt(residuesNeeded.length()-1) == ',')
+                            residuesNeeded.deleteCharAt(residuesNeeded.length()-1);
+                        JOptionPane.showMessageDialog(null, "You need at least residues n"+residuesNeeded.toString()+" in the 3D scene before to create your helix.");
+                        //we remove the residues computed
+                        for (Residue3D r:computedResidues)
+                            mediator.getTertiaryStructure().removeResidue3D(r.getAbsolutePosition());
+                        return;
+                    }
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            else if (mediator.getSecondaryCanvas().getSelectedJunction() != null) {  // the fold selected is cloned
+                if (mediator.getTertiaryFragmentsPanel().getSelectedRows().length != 1) {
+                    JOptionPane.showMessageDialog(null,"You have to make a choice in the lateral panel named \"3D Folds\"");
+                    return;
+                }
+                computedResidues = mediator.getRna2DViewer().loadJunctionHit((TertiaryFragmentHit)mediator.getTertiaryFragmentsPanel().getValueAt(mediator.getTertiaryFragmentsPanel().getSelectedRows()[0],1),mediator.getTertiaryStructure());
+                int anchorResidue1 = -1,anchorResidue2 = -1;
+                List<Integer> positionsNeeded = new ArrayList<Integer>();
+                List<MutablePair<Molecule,Location>> fragments = mediator.getSecondaryCanvas().getSelectedJunction().getFragments();
+                for (int i = 0 ; i< fragments.size() ; i++)  {
+                    MutablePair<Molecule,Location> fragment = fragments.get(i);
+                    positionsNeeded.add(fragment.getRight().getStart());
+                    positionsNeeded.add(fragment.getRight().getEnd());
+                }
+                for (int positionNeeded: positionsNeeded) {
+                    Residue pairedResidue = mediator.getSecondaryStructure().getPairedResidueInSecondaryInteraction(mediator.getSecondaryStructure().getResidue(positionNeeded));
+                    if (pairedResidue == null)
+                        continue;
+                    int pairedPrevious = pairedResidue.getAbsolutePosition();
+                    for (Residue3D previousRes:previousResidues) { //we search which residues in the new ones are already in the 3D scene
+                        if (previousRes.getAbsolutePosition() == positionNeeded) {
+                            anchorResidue1 = positionNeeded;
+                        }
+                        else if  (previousRes.getAbsolutePosition() == pairedPrevious) {
+                            anchorResidue2 = pairedPrevious;
+                        }
+                    }
+                    if (anchorResidue1 != -1 && anchorResidue2 != -1) { //if we found paired anchorResidues, we stop. This is what we needed.
+                        break;
+                    }
+                }
+
+                if (anchorResidue1 == -1 && anchorResidue2 == -1) {
+                    StringBuffer residuesNeeded = new StringBuffer();
+                    fragments = mediator.getSecondaryCanvas().getSelectedJunction().getFragments();
+                    for (int i = 0 ; i< fragments.size()-1 ; i++)  {
+                        MutablePair<Molecule,Location> fragment = fragments.get(i);
+                        residuesNeeded.append(fragment.getRight().getStart()+", "+fragment.getRight().getEnd()+", ");
+                    }
+                    residuesNeeded.append(fragments.get(fragments.size()-1).getRight().getStart()+" or "+fragments.get(fragments.size()-1).getRight().getEnd());
+                    JOptionPane.showMessageDialog(null, "You need at least residue n"+residuesNeeded.toString()+" in the 3D scene before to create your junction.");
+                    //we remove the residues computed
+                    for (Residue3D r:computedResidues)
+                        mediator.getTertiaryStructure().removeResidue3D(r.getAbsolutePosition());
+                    return;
+                }
+
+                try {
+                    if (mediator.getChimeraDriver() != null)  {
+                        File tmpPDB = IoUtils.createTemporaryFile("model.pdb");
+                        Collections.sort(computedResidues,new Comparator<Residue3D>() {
+                            public int compare(Residue3D residue, Residue3D residue1) {
+                                return residue.getAbsolutePosition()-residue1.getAbsolutePosition();
+                            }
+                        });
+                        FileParser.writePDBFile(computedResidues, false, new FileWriter(tmpPDB));
+                        mediator.getChimeraDriver().addFragment(tmpPDB, computedResidues, anchorResidue1, anchorResidue2, firstFragment);
+                    }
+                }
+                catch (Modeling3DException ex) {
+                    if (ex.getStatus() == Modeling3DException.MISSING_ATOMS_IN_MOTIFS)
+                        JOptionPane.showMessageDialog(null,"Cannot apply the 3D fold. Some atoms are missing.");
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            else if (mediator.getSecondaryCanvas().getSelectedSingleStrand() != null && !mediator.getSecondaryCanvas().getSelectedSingleStrand().isAtFivePrimeEnd() && !mediator.getSecondaryCanvas().getSelectedSingleStrand().isAtThreePrimeEnd()  && mediator.getTertiaryFragmentsPanel().getSelectedRows().length == 1) { //the fold selected is cloned
+                try {
+                    computedResidues = mediator.getRna2DViewer().loadJunctionHit((TertiaryFragmentHit)mediator.getTertiaryFragmentsPanel().getValueAt(mediator.getTertiaryFragmentsPanel().getSelectedRows()[0],1),mediator.getTertiaryStructure());
+                    int anchorResidue1 = -1,anchorResidue2 = -1;
+                    int previous = mediator.getSecondaryCanvas().getSelectedSingleStrand().getBase5().getAbsolutePosition()-1;
+                    Residue pairedResidue = mediator.getSecondaryStructure().getPairedResidueInSecondaryInteraction(mediator.getSecondaryStructure().getResidue(previous));
+                    if (pairedResidue != null) {
+                        int pairedPrevious = pairedResidue.getAbsolutePosition();
+                        for (Residue3D previousRes:previousResidues) { //we search which residues in the new ones are already in the 3D scene
+                            if (previousRes.getAbsolutePosition() == previous) {
+                                anchorResidue1 = previous;
+                            }
+                            else if  (previousRes.getAbsolutePosition() == pairedPrevious) {
+                                anchorResidue2 = pairedPrevious;
+                            }
+                        }
+                    }
+
+                    if (anchorResidue1 == -1) {
+                        JOptionPane.showMessageDialog(null, "You need residue n"+previous+" in the 3D scene before to create your single-strand.");
+                        //we remove the residues computed
+                        for (Residue3D r:computedResidues)
+                            mediator.getTertiaryStructure().removeResidue3D(r.getAbsolutePosition());
+                        return;
+                    }
+                    if (mediator.getChimeraDriver() != null) {
+                        File tmpPDB = IoUtils.createTemporaryFile("model.pdb");
+                        Collections.sort(computedResidues,new Comparator<Residue3D>() {
+                            public int compare(Residue3D residue, Residue3D residue1) {
+                                return residue.getAbsolutePosition()-residue1.getAbsolutePosition();
+                            }
+                        });
+                        FileParser.writePDBFile(computedResidues, false, new FileWriter(tmpPDB));
+                        mediator.getChimeraDriver().addFragment(tmpPDB, computedResidues, anchorResidue1, -1, firstFragment);
+                    }
+                }
+                catch (Modeling3DException ex) {
+                    if (ex.getStatus() == Modeling3DException.MISSING_ATOMS_IN_MOTIFS)
+                        JOptionPane.showMessageDialog(null,"Cannot apply the 3D fold. Some atoms are missing.");
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+            else if (mediator.getSecondaryCanvas().getSelectedSingleStrand() != null && mediator.getTertiaryFragmentsPanel().getSelectedRows().length == 0) { //the single-strand is generated de novo
+                if (mediator.getSecondaryCanvas().getSelectedSingleStrand().isAtFivePrimeEnd())
+                    computedResidues = Modeling3DUtils.compute3DSingleStrand(mediator, ts,new Location(mediator.getSecondaryCanvas().getSelectedSingleStrand().getLocation().getStart(),mediator.getSecondaryCanvas().getSelectedSingleStrand().getLocation().getEnd()+1));
+                else if (mediator.getSecondaryCanvas().getSelectedSingleStrand().isAtThreePrimeEnd())
+                    computedResidues = Modeling3DUtils.compute3DSingleStrand(mediator, ts,new Location(mediator.getSecondaryCanvas().getSelectedSingleStrand().getLocation().getStart()-1,mediator.getSecondaryCanvas().getSelectedSingleStrand().getLocation().getEnd()));
+                else
+                    computedResidues = Modeling3DUtils.compute3DSingleStrand(mediator, ts,new Location(mediator.getSecondaryCanvas().getSelectedSingleStrand().getLocation().getStart()-1,mediator.getSecondaryCanvas().getSelectedSingleStrand().getLocation().getEnd()+1));
+
+                int anchorResidue1 = -1,anchorResidue2 = -1;
+                int previous = mediator.getSecondaryCanvas().getSelectedSingleStrand().getBase5().getAbsolutePosition()-1,
+                        after = mediator.getSecondaryCanvas().getSelectedSingleStrand().getBase3().getAbsolutePosition()+1;
+                for (Residue3D previousRes:previousResidues) { //we search which residues in the previous ones are already in the 3D scene
+                    if (previousRes.getAbsolutePosition() == previous) {
+                        anchorResidue1 = previous;
+                    }
+                    else if  (previousRes.getAbsolutePosition() == after) {
+                        anchorResidue2 = after;
+                    }
+                }
+
+                if (anchorResidue1 == -1) {
+                    JOptionPane.showMessageDialog(null, "You need at least residue n"+previous+" in the 3D scene before to create your single-strand.");
+                    //we remove the residues computed
+                    for (Residue3D r:computedResidues)
+                        mediator.getTertiaryStructure().removeResidue3D(r.getAbsolutePosition());
+                    return;
+                }
+
+                if (computedResidues.isEmpty()) {
+                    JOptionPane.showMessageDialog(null,"Problem to generate the new 3D residues!!");
+                    return;
+                }
+                if (mediator.getChimeraDriver() != null) {
+                    File tmpPDB = IoUtils.createTemporaryFile("model.pdb");
+                    try {
+                        Collections.sort(computedResidues, new Comparator<Residue3D>() {
+                            public int compare(Residue3D residue, Residue3D residue1) {
+                                return residue.getAbsolutePosition() - residue1.getAbsolutePosition();
+                            }
+                        });
+                        FileParser.writePDBFile(computedResidues, false, new FileWriter(tmpPDB));
+                        mediator.getChimeraDriver().addFragment(tmpPDB,computedResidues,anchorResidue1, -1 ,firstFragment);
+                    }
+                    catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+            else if (mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction() != null) {
+                int current = mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getLocation().getStart(), currentPaired = mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getLocation().getEnd();
+                Residue3D current3D = null, currentPaired3D = null;
+                computedResidues = new ArrayList<Residue3D>();
+                for (Residue3D previousRes:previousResidues) { //we search which residues in the new ones are already in the 3D scene
+                    if (previousRes.getAbsolutePosition() == current) {
+                        current3D = previousRes;
+                    }
+                    if (previousRes.getAbsolutePosition() == currentPaired) {
+                        currentPaired3D = previousRes;
+                    }
+                }
+
+                if (current3D == null || currentPaired3D == null ) {
+                    JOptionPane.showMessageDialog(null, "You need to have the two residues of the interaction in the 3D scene before to change it.");
+                    return;
+                }
+                char symbol = '?', pairedSymbol = '?';
+                switch (mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getEdge(mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getResidue())) {
+                    case '(': symbol= 'W'; break;
+                    case '[': symbol= 'H'; break;
+                    case '{': symbol= 'S'; break;
+                }
+                switch (mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getEdge(mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getPartnerResidue())) {
+                    case ')': pairedSymbol= 'W'; break;
+                    case ']': pairedSymbol= 'H'; break;
+                    case '}': pairedSymbol= 'S'; break;
+                }
+                String typeForSearch =   mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getResidue().getSymbol()+""+
+                        mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getOrientation()+""+
+                        mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getEdge(mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getResidue())+""+
+                        mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getEdge(mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getPartnerResidue())+""+
+                        mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getPartnerResidue().getSymbol();
+                String type =
+                        mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getResidue().getSymbol()+"-"+
+                                Character.toLowerCase(mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getOrientation())+""+
+                                symbol+""+pairedSymbol+"-"+mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getPartnerResidue().getSymbol();
+
+                Residue3D[] residues3D = Modeling3DUtils2.getAtomsForLWReferenceBasePair(mediator.getAssemble(), type);
+                if (residues3D[0] == null && residues3D[1] == null)
+                    residues3D = Modeling3DUtils3.getAtomsForLWReferenceBasePair(mediator.getAssemble(), typeForSearch);
+                if (residues3D[0] == null && residues3D[1] == null)
+                    residues3D = Modeling3DUtils4.getAtomsForLWReferenceBasePair(mediator.getAssemble(), typeForSearch);
+                if (residues3D[0] == null && residues3D[1] == null)
+                    residues3D = Modeling3DUtils5.getAtomsForLWReferenceBasePair(mediator.getAssemble(), typeForSearch);
+                if (residues3D[0] != null && residues3D[1] != null) {
+                    List<Residue3D> referenceResidues = new ArrayList<Residue3D>();
+                    referenceResidues.add(residues3D[0]);
+                    computedResidues.add(fr.unistra.ibmc.assemble2.utils.Modeling3DUtils.thread(mediator, ts,mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getResidue().getAbsolutePosition(),1,Modeling3DUtils.RNA,referenceResidues).get(0));
+                    referenceResidues.clear();
+                    referenceResidues.add(residues3D[1]);
+                    computedResidues.add(fr.unistra.ibmc.assemble2.utils.Modeling3DUtils.thread(mediator, ts,mediator.getSecondaryCanvas().getSelectedBaseBaseInteraction().getPartnerResidue().getAbsolutePosition(),1,Modeling3DUtils.RNA,referenceResidues).get(0));
+
+                    if (mediator.getChimeraDriver() != null) {
+                        File tmpPDB = IoUtils.createTemporaryFile("model.pdb");
+                        FileParser.writePDBFile(computedResidues, false, new FileWriter(tmpPDB));
+                        mediator.getChimeraDriver().substituteBaseBaseInteraction(tmpPDB, computedResidues);
+                    }
+                }
+                else {
+                    JOptionPane.showMessageDialog(null,"Interaction "+type+" not available in the database");
+                    return;
+                }
+            }
+            else if (mediator.getSecondaryCanvas().getSelectedResidues().size() == 1) {
+                Residue r = mediator.getSecondaryCanvas().getSelectedResidues().get(0);
+
+                Residue3D magnetResidue3D = mediator.getTertiaryStructure().getResidue3DAt(r.getAbsolutePosition()-1);
+                if (magnetResidue3D == null) {
+                    JOptionPane.showMessageDialog(null, "You need residue n"+(r.getAbsolutePosition()-1)+" in the 3D scene before to create residue n"+r.getAbsolutePosition()+".");
+                    return;
+                }
+                computedResidues = new ArrayList<Residue3D>();
+                computedResidues.add(fr.unistra.ibmc.assemble2.utils.Modeling3DUtils.compute3DResidue(mediator, ts, r));
+                if (computedResidues.isEmpty()) {
+                    JOptionPane.showMessageDialog(null,"Problem to generate the 3D residue!!");
+                    return;
+                }
+
+                List<Residue3D> selectedResidues = new ArrayList<Residue3D>();
+                selectedResidues.add(computedResidues.get(0));
+
+                Matrix q = Modeling3DUtils.computeTransformationMatrixToMoveAt3PrimeEnd(magnetResidue3D, computedResidues.get(0));
+                for (Residue3D.Atom atom : computedResidues.get(0).getAtoms()) {
+                    if (atom.hasCoordinatesFilled()) {
+                        float x = atom.getCoordinates()[0];
+                        float y = atom.getCoordinates()[1];
+                        float z = atom.getCoordinates()[2];
+
+                        double x2 = x * q.get(0, 0) + y * q.get(0, 1) + z * q.get(0, 2) + q.get(0, 3);
+                        double y2 = x * q.get(1, 0) + y * q.get(1, 1) + z * q.get(1, 2) + q.get(1, 3);
+                        double z2 = x * q.get(2, 0) + y * q.get(2, 1) + z * q.get(2, 2) + q.get(2, 3);
+                        atom.setCoordinates((float) x2, (float) y2, (float) z2);
+                    }
+                }
+                selectedResidues.add(0, magnetResidue3D);
+
+                if (mediator.getChimeraDriver() != null) {
+                    File tmpPDB = IoUtils.createTemporaryFile("model.pdb");
+                    FileParser.writePDBFile(selectedResidues, false, new FileWriter(tmpPDB));
+                    mediator.getChimeraDriver().addFragment(tmpPDB, selectedResidues, magnetResidue3D.getAbsolutePosition(), -1, firstFragment);
+                }
+            }
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public void recompute2DCoordinates() {
+        for (Helix h : this.secondaryStructure.getHelices())
+            h.setCoordinates(mediator.getSecondaryCanvas().getGraphicContext());
     }
 }

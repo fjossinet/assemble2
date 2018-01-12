@@ -5,11 +5,16 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mongodb.*;
 import fr.unistra.ibmc.assemble2.gui.Mediator;
+import fr.unistra.ibmc.assemble2.io.FileParser;
+import fr.unistra.ibmc.assemble2.io.Modeling3DException;
 import fr.unistra.ibmc.assemble2.model.*;
 import fr.unistra.ibmc.assemble2.model.TertiaryFragmentHit;
-import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
+import fr.unistra.ibmc.assemble2.utils.*;
 import org.apache.commons.lang3.tuple.MutablePair;
 
+import javax.swing.*;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.*;
 
 public class DataHandler extends Computation {
@@ -126,7 +131,6 @@ public class DataHandler extends Computation {
     public List<TertiaryFragmentHit> findJunctions(List<String> query) throws Exception {
         JsonParser jsonParser = new JsonParser();
         JsonArray junctions = null;
-
         if (!AssembleConfig.useLocalAlgorithms()) { //connection to a remote MongoDB through Webservices
             Map<String,String> data = new Hashtable<String,String>();
             data.put("coll","junctions");
@@ -137,18 +141,8 @@ public class DataHandler extends Computation {
             else if (AssembleConfig.getFragmentsLibrary().equals("Non redundant"))
                 result = this.postData("rna3dhub", data);
             junctions = jsonParser.parse(result).getAsJsonArray();
-            if (junctions.size() == 0) { //perhaps an old version of the database
-                data = new Hashtable<String,String>();
-                data.put("coll","junctions");
-                data.put("query","{\"crown\":{\"$size\":"+query.size()+"}}");
-                if (AssembleConfig.getFragmentsLibrary().equals("Redundant"))
-                    result = this.postData("pdb", data);
-                else if (AssembleConfig.getFragmentsLibrary().equals("Non redundant"))
-                    result = this.postData("rna3dhub", data);
-                junctions = jsonParser.parse(result).getAsJsonArray();
-            }
         } else {//connection to a local MongoDB
-            BasicDBObject _query = new BasicDBObject("crown", new BasicDBObject("$size",query.size()));
+            BasicDBObject _query = new BasicDBObject("location", new BasicDBObject("$size",query.size()));
             junctions = new JsonArray();
             Iterator<DBObject> it = mediator.get3DMongo().getCollection("junctions").find(_query).iterator();
             while (it.hasNext())
@@ -161,8 +155,6 @@ public class DataHandler extends Computation {
         while (junctionsIterator.hasNext()) {
             JsonObject junction  = (JsonObject)junctionsIterator.next();
             JsonArray location = (JsonArray)junction.get("location");
-            if (location == null) //this is an old description of the junction
-                location = (JsonArray)junction.get("crown");
             List<Integer[]> fragments = new ArrayList<Integer[]>();
             for (int i=0 ; i < location.size() ; i++) {
                 JsonArray fragmentEnds = location.get(i).getAsJsonArray();
@@ -231,8 +223,6 @@ public class DataHandler extends Computation {
         while (junctionsIterator.hasNext()) {
             JsonObject junction  = (JsonObject)junctionsIterator.next();
             JsonArray location = (JsonArray)junction.get("location");
-            if (location == null) //this is an old description of the junction
-                location = (JsonArray)junction.get("crown");
             List<Integer[]> fragments = new ArrayList<Integer[]>();
             for (int i=0 ; i < location.size() ; i++) {
                 JsonArray fragmentEnds = location.get(i).getAsJsonArray();

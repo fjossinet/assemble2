@@ -495,4 +495,11 @@ public class GraphicContext {
         return this.alignmentFont;
     }
 
+    public void setHeight(double height) {
+        this.height = height;
+    }
+
+    public double getHeight() {
+        return height;
+    }
 }

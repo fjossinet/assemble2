@@ -125,20 +125,18 @@ public class Assemble extends Application implements SelectionTransmitter {
 
     public static File getTertiaryDataDirectory() throws IOException {
         File tertiaryDataDir = new File(getUserDir(),"tertiary_data");
-        if (!tertiaryDataDir.exists() || tertiaryDataDir.listFiles().length == 0) {
+        File destFile = new File(tertiaryDataDir, "tertiary_data.zip");
+        if (!tertiaryDataDir.exists() || tertiaryDataDir.listFiles().length == 0 || tertiaryDataDir.listFiles().length == 1 && destFile.exists()) {
             tertiaryDataDir.mkdir();
-            File destFile = new File(tertiaryDataDir, "tertiary_data.zip");
             URL inputUrl = Assemble.class.getResource("/fr/unistra/ibmc/assemble2/utils/data/tertiary_data.zip");
             FileUtils.copyURLToFile(inputUrl, destFile);
-            File dataZipped = new File(getInstallPath(),"tertiary_data.zip");
             try {
-                IoUtils.extractArchivedFile(tertiaryDataDir.getAbsolutePath(),dataZipped, null);
-                dataZipped.delete();
+                IoUtils.extractArchivedFile(tertiaryDataDir.getAbsolutePath(),destFile, null);
+                destFile.delete();
             } catch (IOException e) {
                 e.printStackTrace();
                 return null;
             }
-
         }
         return tertiaryDataDir;
     }
@@ -190,11 +188,15 @@ public class Assemble extends Application implements SelectionTransmitter {
                     splashScreen.getProgressBar().setIndeterminate(true);
                     IoUtils.clearDirectory(new File(getUserDir(), "tmp"));
                     splashScreen.getProgressBar().setIndeterminate(false);
+                    splashScreen.setMessage("Cleaning done");
                     try {
+                        splashScreen.setMessage("Load configuration");
                         AssembleConfig.loadConfig();
+                        splashScreen.setMessage("Configuration done");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    splashScreen.setMessage("Assemble2 ready to start");
                     Assemble.this.startup();
                     return null;
                 }
@@ -1292,6 +1294,7 @@ public class Assemble extends Application implements SelectionTransmitter {
 
         if (AssembleConfig.launchChimeraAtStart())
             new ChimeraDriver(mediator);
+        System.out.println(mediator.getChimeraDriver());
         //the first time a file is opened, the user is in the samples directory
         setLastWorkingDirectory(new File(Assemble.getInstallPath(), "samples"));
 
@@ -1602,7 +1605,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }});
             genomicAnnotations.add(item);
 
-            item = new JMenuItem("From the GenBank Database");
+            item = new JMenuItem("From the Genbank Database");
             item.setIcon(new WebIcon());
             item.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
@@ -2580,6 +2583,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                     panel.add(new JLabel("Launch Chimera at startup"));
                     inputs.add(panel);
 
+
                     panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
                     ((FlowLayout)panel.getLayout()).setHgap(0);
                     final JCheckBox popupLateralPanels = new JCheckBox();
@@ -2587,6 +2591,31 @@ public class Assemble extends Application implements SelectionTransmitter {
                     panel.add(popupLateralPanels);
                     panel.add(new JLabel("Pop up lateral panels automatically"));
                     inputs.add(panel);
+
+                    panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+                    ((FlowLayout)panel.getLayout()).setHgap(0);
+                    panel.add(new JLabel("Residue size"));
+                    inputs.add(panel);
+                    JSlider residueSize = new JSlider(JSlider.HORIZONTAL,
+                            5, 15,  (int)mediator.getSecondaryCanvas().getGraphicContext().getHeight());
+                    residueSize.setPaintTicks(true);
+                    residueSize.setPaintLabels(true);
+                    residueSize.addChangeListener(new ChangeListener() {
+
+                        @Override
+                        public void stateChanged(ChangeEvent e) {
+                            JSlider source = (JSlider)e.getSource();
+                            int size = (int)source.getValue();
+                            if (mediator.getSecondaryCanvas().getGraphicContext() != null) {
+                                mediator.getSecondaryCanvas().getGraphicContext().setHeight(size);
+                                mediator.getSecondaryCanvas().recompute2DCoordinates();
+                                mediator.getSecondaryCanvas().repaint();
+                            }
+                        }
+                    });
+                    residueSize.setMajorTickSpacing(1);
+                    residueSize.setPaintTicks(true);
+                    inputs.add(residueSize);
 
                     if (JOptionPane.OK_OPTION ==  JOptionPane.showConfirmDialog(null, inputs.toArray(new JComponent[]{}), "Configuration", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE)) {
 
