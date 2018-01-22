@@ -12,6 +12,7 @@ import java.net.URI;
  * A class to open a websocket with a website
  */
 public class WebSocketClient extends org.java_websocket.client.WebSocketClient{
+
     public WebSocketClient(URI serverURI) {
         super(serverURI);
     }

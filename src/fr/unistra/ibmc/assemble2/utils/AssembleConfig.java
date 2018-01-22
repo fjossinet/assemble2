@@ -11,18 +11,19 @@ import org.jdom.output.Format;
 import org.jdom.input.SAXBuilder;
 
 import java.awt.*;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.prefs.BackingStoreException;
 import java.util.List;
 import java.util.ArrayList;
-import java.io.IOException;
-import java.io.File;
-import java.io.FileWriter;
 
 import fr.unistra.ibmc.assemble2.Assemble;
 
 public class AssembleConfig {
 
     private static Document document;
+    private static List<String> availableServers = new ArrayList<>();
 
     public static void loadConfig() throws BackingStoreException, IOException {
         String release = IoUtils.getAssemble2Release();
@@ -87,6 +88,7 @@ public class AssembleConfig {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            loadServersFromGithub();
         }
     }
 
@@ -135,22 +137,6 @@ public class AssembleConfig {
             e.removeChildren("file");
     }
 
-
-    public static void setCurrentWebservicesAddress(String address) {
-        Element child = null;
-        for (Object url:document.getRootElement().getChild("webservices-address").getChildren("url")) {
-            Element e = (Element)url;
-            if (e.getTextTrim().equals(address)) {
-                child = e;
-                break;
-            }
-        }
-        if (child != null) {
-            document.getRootElement().getChild("webservices-address").removeContent(child);
-            document.getRootElement().getChild("webservices-address").addContent(0,child);
-        }
-    }
-
     public static void setNumberOfSequencesToDisplay(int nb) {
         document.getRootElement().getChild("sequences-2-display-in-alignment").setText(""+nb);
     }
@@ -168,40 +154,51 @@ public class AssembleConfig {
         return nb;
     }
 
+    private static void loadServersFromGithub() {
+
+        try {
+            URL url = null;
+            url = new URL("https://raw.githubusercontent.com/fjossinet/RNA-Science-Toolbox/master/servers.txt");
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(url.openStream()));
+
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                availableServers.add("http://"+inputLine);
+            }
+            in.close();
+
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public static void addWebservicesAddress(String address) {
         Element url = new Element("url");
         url.setText(address.trim());
         document.getRootElement().getChild("webservices-address").addContent(0, url);
     }
 
-    public static List<String> getWebservicesAddress() {
-        List<String> addresses = new ArrayList<String>();
-        Element e = document.getRootElement().getChild("webservices-address");
-        if (e == null) {
-            e = new Element("webservices-address");
-            Element url = new Element("url");
-            url.setText("http://arn-ibmc.in2p3.fr");
-            e.addContent(url);
-            document.getRootElement().addContent(e);
-            addresses.add("http://arn-ibmc.in2p3.fr");
-            return addresses;
-        }
-        else if (e.getTextTrim().length() != 0) {
-            String address = e.getTextTrim();
-            addresses.add(address);
-            e.setText("");
-            Element url = new Element("url");
-            url.setText(address);
-            e.addContent(url);
-            return addresses;
-        }
-        for (Object url: e.getChildren("url"))
-            addresses.add(((Element)url).getTextTrim());
-        return addresses;
+    public static List<String> getAvailableServers() {
+        return availableServers;
     }
 
-    public static String getID() {
-       return document.getRootElement().getChild("id").getText();
+    public static void setCurrentServer(String address) {
+        document.getRootElement().getChild("current-server").setText(address);
+    }
+
+    public static String getCurrentServer() {
+        Element e = document.getRootElement().getChild("current-server");
+        if (e == null) {
+            e = new Element("current-server");
+            e.setText(availableServers.get(0));
+            document.getRootElement().addContent(e);
+            setCurrentServer(availableServers.get(0));
+        }
+        return e.getTextTrim();
     }
 
     public static String getMongoDBAddress() {
@@ -216,6 +213,10 @@ public class AssembleConfig {
 
     public static void setMongoDBAddress(String address) {
         document.getRootElement().getChild("mongodb-address").setText(address);
+    }
+
+    public static String getID() {
+       return document.getRootElement().getChild("id").getText();
     }
 
     public static String getFragmentsLibrary() {

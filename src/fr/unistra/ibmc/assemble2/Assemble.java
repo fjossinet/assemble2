@@ -20,7 +20,9 @@ import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.JFXPanel;
 import javafx.event.*;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Group;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Control;
@@ -76,7 +78,6 @@ import java.util.logging.Level;
 import java.util.prefs.BackingStoreException;
 import java.util.regex.Pattern;
 
-
 public class Assemble extends Application implements SelectionTransmitter {
 
     private static GlyphFont fontAwesome = GlyphFontRegistry.font("FontAwesome");
@@ -122,6 +123,7 @@ public class Assemble extends Application implements SelectionTransmitter {
     private RNACentralWebsite rnaCentralWebsite;
     private MfoldWebServer mfoldWebServer;
     private Tutorial2Website tutorial2Website;
+
 
     public static File getTertiaryDataDirectory() throws IOException {
         File tertiaryDataDir = new File(getUserDir(),"tertiary_data");
@@ -468,6 +470,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             }.execute();
         }
+
         else if (format.equals("ct-file")) {
             final File f = new File(id);
             setLastWorkingDirectory(f.getParentFile());
@@ -497,6 +500,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             }.execute();
         }
+
         else if (format.equals("pdb-file")) {
             final File f = new File(id);
             setLastWorkingDirectory(f.getParentFile());
@@ -523,6 +527,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             }.execute();
         }
+
         else if (format.equals("pdb-db")) {
             if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
                 return;
@@ -541,6 +546,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             }.execute();
         }
+
         else if (format.equals("rfam-db")) {
             if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
                 return;
@@ -559,6 +565,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             }.execute();
         }
+
         else if (format.equals("clustal-file")) {
             final File f = new File(id);
             setLastWorkingDirectory(f.getParentFile());
@@ -603,6 +610,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             }.execute();
         }
+
         else if (format.equals("stockholm-file")) {
             final File f = new File(id);
             setLastWorkingDirectory(f.getParentFile());
@@ -629,6 +637,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             }.execute();
         }
+
         else if (format.equals("numeric values")) {
             final File f = new File(id);
             setLastWorkingDirectory(f.getParentFile());
@@ -1294,7 +1303,6 @@ public class Assemble extends Application implements SelectionTransmitter {
 
         if (AssembleConfig.launchChimeraAtStart())
             new ChimeraDriver(mediator);
-        System.out.println(mediator.getChimeraDriver());
         //the first time a file is opened, the user is in the samples directory
         setLastWorkingDirectory(new File(Assemble.getInstallPath(), "samples"));
 
@@ -1314,7 +1322,7 @@ public class Assemble extends Application implements SelectionTransmitter {
 
         if (!AssembleConfig.useLocalAlgorithms() && !isServerReachable())
             JOptionPane.showMessageDialog(Assemble.this.window,
-                    "Cannot reach "+AssembleConfig.getWebservicesAddress().get(0),
+                    "Cannot reach "+AssembleConfig.getCurrentServer(),
                     "Server unreachable",
                     JOptionPane.WARNING_MESSAGE);
         else
@@ -1328,7 +1336,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 try {
                     if (mediator.getWebSocketClient() != null)
                         mediator.getWebSocketClient().close();
-                    String baseURL = AssembleConfig.getWebservicesAddress().get(0).split("http://")[1];
+                    String baseURL = AssembleConfig.getCurrentServer().split("http://")[1];
                     WebSocketClient webSocketClient = new WebSocketClient(new URI("ws://" + baseURL + "/websocket"));
                     mediator.setWebSocketClient(webSocketClient);
                     webSocketClient.run();
@@ -1342,9 +1350,9 @@ public class Assemble extends Application implements SelectionTransmitter {
 
     public boolean isServerReachable() {
         // Otherwise an exception may be thrown on invalid SSL certificates:
-        String url =  AssembleConfig.getWebservicesAddress().get(0).replaceFirst("^https", "http");
+        String url =  AssembleConfig.getCurrentServer().replaceFirst("^https", "http");
         url = url.split("/api/")[0];
-        int timeout = 100;
+        int timeout = 2000;
 
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
@@ -1354,6 +1362,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             int responseCode = connection.getResponseCode();
             return (200 <= responseCode && responseCode <= 399);
         } catch (IOException exception) {
+            exception.printStackTrace();
             return false;
         }
     }
@@ -1654,7 +1663,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }});
             genomicAnnotations.add(item);
 
-            /*if (AssembleConfig.getWebservicesAddress().trim().length() == 0) {
+            /*if (AssembleConfig.getAvailableServers().trim().length() == 0) {
                 item = new JMenuItem("From MongoDB");
 
                 item.setIcon(new DatabaseIcon());
@@ -2008,7 +2017,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             });
             alignmentMenu.add(item);
 
-            /*if (AssembleConfig.getWebservicesAddress().trim().length() == 0) {
+            /*if (AssembleConfig.getAvailableServers().trim().length() == 0) {
                 item = new JMenuItem("From MongoDB");
                 item.setIcon(new DatabaseIcon());
                 item.addActionListener(loadAlignmentsFromMongoDB);
@@ -2147,7 +2156,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                                 allData.append("&");
                             allData.append(URLEncoder.encode(key, "UTF-8") + "=" + URLEncoder.encode(request.get(key), "UTF-8"));
                         }
-                        URL url = new URL(AssembleConfig.getWebservicesAddress().get(0)+"/save_project");
+                        URL url = new URL(AssembleConfig.getCurrentServer()+"/save_project");
                         URLConnection conn = url.openConnection();
                         conn.setDoOutput(true);
                         OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream());
@@ -2535,7 +2544,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                     b.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            IoUtils.openBrowser(AssembleConfig.getWebservicesAddress().get(0)+"/account?tool_name=Assemble2&tool_id="+AssembleConfig.getID());
+                            IoUtils.openBrowser(AssembleConfig.getAvailableServers().get(0)+"/account?tool_name=Assemble2&tool_id="+AssembleConfig.getID());
                         }
                     });*/
 
@@ -2543,8 +2552,8 @@ public class Assemble extends Application implements SelectionTransmitter {
                     final JTextField chimeraExecutable = new JTextField(AssembleConfig.getChimeraPath());
                     inputs.add(chimeraExecutable);
 
-                    inputs.add(new JLabel("Web Services Address"));
-                    final JComboBox webServiceAddresses = new JComboBox(AssembleConfig.getWebservicesAddress().toArray(new String[]{}));
+                    /*inputs.add(new JLabel("Web Services Address"));
+                    final JComboBox webServiceAddresses = new JComboBox(AssembleConfig.getAvailableServers().toArray(new String[]{}));
                     inputs.add(webServiceAddresses);
 
                     JButton b = new JButton("Add new Address");
@@ -2559,7 +2568,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                                 webServiceAddresses.setSelectedItem(address.trim());
                             }
                         }
-                    });
+                    });*/
 
                     inputs.add(new JLabel("3D Fragments Library"));
                     final JComboBox fragmentsLibrary = new JComboBox(new String[]{"Non redundant",
@@ -2596,8 +2605,9 @@ public class Assemble extends Application implements SelectionTransmitter {
                     ((FlowLayout)panel.getLayout()).setHgap(0);
                     panel.add(new JLabel("Residue size"));
                     inputs.add(panel);
+                    int heightValue = mediator.getSecondaryCanvas().getGraphicContext() ==  null ? GraphicContext.DEFAULT_HEIGHT : (int)mediator.getSecondaryCanvas().getGraphicContext().getHeight();
                     JSlider residueSize = new JSlider(JSlider.HORIZONTAL,
-                            5, 15,  (int)mediator.getSecondaryCanvas().getGraphicContext().getHeight());
+                            5, 15,  heightValue);
                     residueSize.setPaintTicks(true);
                     residueSize.setPaintLabels(true);
                     residueSize.addChangeListener(new ChangeListener() {
@@ -2628,21 +2638,21 @@ public class Assemble extends Application implements SelectionTransmitter {
 
                         AssembleConfig.popupLateralPanels(popupLateralPanels.isSelected());
 
-                        String param = ((String)webServiceAddresses.getSelectedItem()).trim();
+                        /*String param = ((String)webServiceAddresses.getSelectedItem()).trim();
                         if (param != null) {
-                            AssembleConfig.setCurrentWebservicesAddress(param.trim());
+                            AssembleConfig.setCurrentServer(param.trim());
                             if (!AssembleConfig.useLocalAlgorithms() && !isServerReachable())
                                 JOptionPane.showMessageDialog(Assemble.this.window,
-                                        "Cannot reach " + AssembleConfig.getWebservicesAddress().get(0),
+                                        "Cannot reach " + AssembleConfig.getAvailableServers().get(0),
                                         "Server unreachable",
                                         JOptionPane.WARNING_MESSAGE);
                             else if (!AssembleConfig.useLocalAlgorithms())
                                 openWebSocket();
 
-                        }
+                        }*/
 
                         String previousChimeraPath = AssembleConfig.getChimeraPath();
-                        param = chimeraExecutable.getText().trim();
+                        String param = chimeraExecutable.getText().trim();
                         if (param != null && param.trim().length() != 0)
                             AssembleConfig.setChimeraPath(param.trim());
 
@@ -2659,7 +2669,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             });
 
-            JMenuItem configureAlgorithms = new JMenuItem("RNA algorithms");
+            JMenuItem configureAlgorithms = new JMenuItem("Algorithms");
             configureAlgorithms.setIcon(new Wrench2Icon());
             configure.add(configureAlgorithms);
 
@@ -3727,7 +3737,6 @@ public class Assemble extends Application implements SelectionTransmitter {
             this.errorTimer = new javax.swing.Timer(500,new ActionListener() {
                 private boolean b = true;
                 public void actionPerformed(ActionEvent actionEvent) {
-
                     this.b = !this.b;
                 }
             });

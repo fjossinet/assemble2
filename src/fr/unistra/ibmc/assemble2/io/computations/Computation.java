@@ -1,13 +1,11 @@
 package fr.unistra.ibmc.assemble2.io.computations;
 
 import fr.unistra.ibmc.assemble2.gui.Mediator;
-import fr.unistra.ibmc.assemble2.io.drivers.OnHangApplicationDriver;
 import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
 import fr.unistra.ibmc.assemble2.utils.IoUtils;
 
 import javax.swing.*;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
@@ -32,13 +30,7 @@ abstract public class Computation {
             allData.append(URLEncoder.encode(key, "UTF-8") + "=" + URLEncoder.encode(data.get(key), "UTF-8"));
         }
         try {
-            URL url = null;
-            if (AssembleConfig.getWebservicesAddress().get(0).endsWith("/api/"))
-                url = new URL(AssembleConfig.getWebservicesAddress().get(0)+webservice);
-            else if (AssembleConfig.getWebservicesAddress().get(0).endsWith("/api"))
-                url = new URL(AssembleConfig.getWebservicesAddress().get(0)+"/"+webservice);
-            else
-                url = new URL(AssembleConfig.getWebservicesAddress().get(0)+"/api/"+webservice);
+            URL url = new URL(AssembleConfig.getCurrentServer()+"/api/"+webservice);
             URLConnection conn = url.openConnection();
             conn.setDoOutput(true);
             OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream());

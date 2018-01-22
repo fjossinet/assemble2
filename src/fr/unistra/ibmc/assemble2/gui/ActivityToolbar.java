@@ -7,9 +7,10 @@ import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
 import fr.unistra.ibmc.assemble2.utils.SvgPath;
 import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Group;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.web.WebEngine;
@@ -26,6 +27,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
+import java.io.IOException;
 import java.util.*;
 
 public class ActivityToolbar implements ToolBar {
@@ -37,7 +39,7 @@ public class ActivityToolbar implements ToolBar {
     private Timer activityTimer;
     private double step = 0;
     private SwingWorker lastWorker, currentWorker;
-    private ComputingServer computingServer;
+    private WebServicesPanel webServicesPanel;
     private static GlyphFont fontAwesome = GlyphFontRegistry.font("FontAwesome");
 
 
@@ -176,11 +178,11 @@ public class ActivityToolbar implements ToolBar {
                     new javax.swing.SwingWorker() {
                         @Override
                         protected Object doInBackground() throws Exception {
-                            if (computingServer != null) {
-                                computingServer.setVisible(true);
-                                computingServer.toFront();
+                            if (webServicesPanel != null) {
+                                webServicesPanel.setVisible(true);
+                                webServicesPanel.toFront();
                             } else {
-                                computingServer = new ComputingServer();
+                                webServicesPanel = new WebServicesPanel();
                             }
                             return null;
                         }
@@ -219,13 +221,14 @@ public class ActivityToolbar implements ToolBar {
             this.mediator.getSecondaryCanvas().repaint();
     }
 
-    private class ComputingServer extends JFrame {
+    private class WebServicesPanel extends JFrame {
         private JFXPanel jfxPanel;
+        private String currentPDBID;
 
-        private ComputingServer() {
-            this.setTitle("Computing Server");
+        private WebServicesPanel() {
+            this.setTitle("Servers");
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            this.setSize((int) screenSize.getWidth() / 2, (int) screenSize.getHeight());
+            this.setSize(screenSize.width/2, screenSize.height);
             this.setLayout(new BorderLayout());
             jfxPanel = new JFXPanel();
             this.createScene();
@@ -239,46 +242,19 @@ public class ActivityToolbar implements ToolBar {
                 @Override
                 public void run() {
                     Stage stage = new Stage();
-                    final BorderPane root = new BorderPane();
-
-                    stage.setTitle("Computing Server");
-
-                    Scene scene = new Scene(new Group());
-                    stage.setScene(scene);
-
-                    // Set up the embedded browser:
-                    String baseURL = AssembleConfig.getWebservicesAddress().get(0)+"/server";
-                    WebView browser = new WebView();
-                    final WebEngine webEngine = browser.getEngine();
-                    webEngine.load(baseURL);
-
-                    root.setCenter(browser);
-
-                    javafx.scene.control.Button home = new javafx.scene.control.Button(null, fontAwesome.create(FontAwesome.Glyph.HOME));
-                    home.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
-                        @Override
-                        public void handle(javafx.event.ActionEvent actionEvent) {
-                            webEngine.load(baseURL);
-                        }
-                    });
-
-                    final HBox hbox = new HBox();
-                    hbox.setPadding(new javafx.geometry.Insets(15, 12, 15, 12));
-                    hbox.setSpacing(10);
-                    hbox.setStyle("-fx-background-color: #3F7D97;");
-
-                    hbox.getChildren().add(home);
-
-                    root.setTop(hbox);
-
-                    scene.setRoot(root);
-
-                    jfxPanel.setScene(scene);
+                    Parent root = null;
+                    try {
+                        root = FXMLLoader.load(getClass().getResource("ServersPanel.fxml"));
+                        stage.setTitle("Servers");
+                        Scene scene = new Scene(root);
+                        stage.setScene(scene);
+                        jfxPanel.setScene(scene);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             });
         }
-
-
 
     }
 }

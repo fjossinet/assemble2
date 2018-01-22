@@ -14,7 +14,7 @@ import java.util.*;
 
 public class GraphicContext {
 
-    static final byte BASECOLOR = 0, STRUCTURECOLOR = 1, SEQUENCECOLOR = 2, INTERACTIONCOLOR = 3;
+    static public final byte BASECOLOR = 0, STRUCTURECOLOR = 1, SEQUENCECOLOR = 2, INTERACTIONCOLOR = 3, DEFAULT_HEIGHT = 9, DEFAULT_WIDTH = 6;
     private byte colorMode = STRUCTURECOLOR;
     private Font f;
     //the upperleft corner of the current view
@@ -77,7 +77,7 @@ public class GraphicContext {
     GraphicContext() {}
 
     GraphicContext(CanvasInterface canvas) {
-        this(6,9,canvas);
+        this(DEFAULT_WIDTH,DEFAULT_HEIGHT,canvas);
     }
 
     GraphicContext(final double width, final double height, final CanvasInterface canvas) {
