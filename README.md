@@ -17,24 +17,6 @@ Assemble2 has been developed with the Java language on MacOSX. It has been teste
 
 ![Assemble2 description](media/poster-assemble2.png)
 
-#News
+* [Documentation](https://github.com/fjossinet/assemble2/wiki)
+* [Download and installation](https://github.com/fjossinet/assemble2/wiki/Download-and-installation)
 
-* Jan-19-18: a [new update](#releases) for Assemble 2.2 is available.
-
-#Quickstart
-
-* install the 3D viewer [UCSF Chimera](http://www.cgl.ucsf.edu/chimera/)
-* download and unzip the last release
-* in a terminal, from the Assemble2 directory, launch one of the launch_Assemble2_for_XXX files:
-
-        ./launch_Assemble2_for_XXX
-
-#Releases
-
-##Assemble 2.2
-
-* **last update**: Jan-19-18
-* **requirements**: you need [Java 8 from Oracle](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) intalled on your computer (at now, Assemble2 is not working with java 9 and with non official java release (like openJDK))
-* **download link**: [Assemble2.zip](Assemble2.zip)
-
-#Screenshots
