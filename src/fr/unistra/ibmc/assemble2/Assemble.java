@@ -80,6 +80,8 @@ import java.util.regex.Pattern;
 
 public class Assemble extends Application implements SelectionTransmitter {
 
+    public static final String CURRENT_RELEASE="Assemble2.3";
+
     private static GlyphFont fontAwesome = GlyphFontRegistry.font("FontAwesome");
 
     public static boolean HELP_MODE;
@@ -1157,7 +1159,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                                 "My Assemble2 had problems to annotate the following 3D:<br/><br/>" +
                                 "<pre>" + pdbContent.toString() + "</pre>" +
                                 "<br/><br/><b>My details:</b><br/>" +
-                                "Assemble2 version: " + IoUtils.getAssemble2Release() + "<br/>" +
+                                "Assemble2 version: " + Assemble.CURRENT_RELEASE + "<br/>" +
                                 "Operating system: " + System.getProperty("os.name") + "<br/>" +
                                 "Java version: " + System.getProperty("java.version") + "<br/><br/>" +
                                 "Cheers."
@@ -1203,9 +1205,7 @@ public class Assemble extends Application implements SelectionTransmitter {
         Rna2DViewer rna2dViewer = new Rna2DViewer(this.mediator);
         rna2dViewer.addKeyListener(new AssembleKeyListener(mediator));
 
-        String release = IoUtils.getAssemble2Release();
-
-        ((JFrame) this.window).setTitle(release);
+        ((JFrame) this.window).setTitle(CURRENT_RELEASE);
 
         //###### the panels displayed by the lateral toolbar ####
 
@@ -1318,7 +1318,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             }
         });
         timer.setRepeats(false);
-        timer.start();
+        //timer.start();
 
         if (!AssembleConfig.useLocalAlgorithms() && !isServerReachable())
             JOptionPane.showMessageDialog(Assemble.this.window,
@@ -2382,8 +2382,8 @@ public class Assemble extends Application implements SelectionTransmitter {
                                     SecondaryStructure ss = mediator.getSecondaryStructure();
                                     pw.write("<?xml version=\"1.0\"?>\n");
                                     pw.write("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n");
-                                    pw.write("<svg width=\"${m.secondaryCanvas.width}\" height=\"${m.secondaryCanvas.height}\">\n");
-                                    pw.write("<title>${ss.name}</title>\n");
+                                    pw.write("<svg width=\""+mediator.getSecondaryCanvas().getWidth()+"\" height=\""+mediator.getSecondaryCanvas().getHeight()+"\">\n");
+                                    pw.write("<title>"+mediator.getSecondaryStructure().getName()+"</title>\n");
                                     for (Helix h: ss.getHelices()) {
                                         for (Residue r: h.getResidues())
                                             if (r.isInsideDrawingArea(mediator.getSecondaryCanvas().getGraphicContext()))
@@ -3270,8 +3270,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             });
             this.add(new OpenWebPageItem("The Assemble2 Website", "http://bioinformatics.org/assemble/"));
             this.add(new OpenWebPageItem("The Assemble2 Blog", "http://assemble2.wordpress.com/"));
-            //this.add(new OpenWebPageItem(new GooglePlusIcon(), "Google Plus", "https://www.google.fr/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&ved=0CEEQFjAB&url=https%3A%2F%2Fplus.google.com%2F116605164961471297311&ei=ujFgUvCrKYO57Abv34GIDw&usg=AFQjCNFQRhGcOGKrbdpPDmdSTo58_GGObg&sig2=3Ig_VT-egILNYbS4XP9jHg&bvm=bv.54176721,d.ZGU"));
-            this.add(new OpenWebPageItem(new TwitterIcon(), "Twitter", "https://twitter.com/fjossinet"));
+            this.add(new OpenWebPageItem(new TwitterIcon(), "Twitter", "https://twitter.com/RnaSciToolbox"));
 
         }
 

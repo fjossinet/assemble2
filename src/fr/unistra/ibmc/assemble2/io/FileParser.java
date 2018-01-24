@@ -3,6 +3,7 @@ package fr.unistra.ibmc.assemble2.io;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import fr.unistra.ibmc.assemble2.Assemble;
 import fr.unistra.ibmc.assemble2.gui.components.ColorMenu;
 import fr.unistra.ibmc.assemble2.gui.components.MessagingSystemAction;
 import fr.unistra.ibmc.assemble2.gui.components.ReportDialog;
@@ -312,7 +313,7 @@ public class FileParser {
                                     "My Assemble2 had problems to load the following data:<br/><br/>" +
                                     "<pre>"+fullContent.toString()+"</pre>" +
                                     "<br/><br/><b>My details:</b><br/>" +
-                                    "Assemble2 version: " + IoUtils.getAssemble2Release() + "<br/>"+
+                                    "Assemble2 version: " + Assemble.CURRENT_RELEASE + "<br/>"+
                                     "Operating system: "+ System.getProperty("os.name") +"<br/>"+
                                     "Java version: " + System.getProperty("java.version") + "<br/><br/>" +
                                     "Cheers."
@@ -508,7 +509,7 @@ public class FileParser {
                                     "My Assemble2 had problems to load the following data:<br/><br/>" +
                                     "<pre>"+fullContent.toString()+"</pre>" +
                                     "<br/><br/><b>My details:</b><br/>" +
-                                    "Assemble2 version: " + IoUtils.getAssemble2Release() + "<br/>" +
+                                    "Assemble2 version: " + Assemble.CURRENT_RELEASE + "<br/>" +
                                     "Operating system: " + System.getProperty("os.name") + "<br/>" +
                                     "Java version: " + System.getProperty("java.version") + "<br/><br/>" +
                                     "Cheers."

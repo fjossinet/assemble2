@@ -25,15 +25,6 @@ public class IoUtils {
 
     private static File lastFilePath = new File(System.getProperty("user.home"));
 
-    public static String getAssemble2Release() {
-        try {
-            SimpleDateFormat format = new SimpleDateFormat("MMM dd, yyyy");
-            return "Assemble2.2 Development Release: "+format.format(Calendar.getInstance().getTime());
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     public static File getTmpDirectory() {
         File tmpDir = new File(new StringBuffer(Assemble.getUserDir().getAbsolutePath()).append(System.getProperty("file.separator")).append("tmp").toString());
         if (!tmpDir.exists())

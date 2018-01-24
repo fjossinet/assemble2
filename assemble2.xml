@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="assemble2" default="all">
+
+
+    <property file="assemble2.properties"/>
+
+    <target name="set release version" description="">
+        <replaceregexp file="${basedir}/src/fr/unistra/ibmc/assemble2/Assemble.java"
+                       match='CURRENT_RELEASE="Assemble.*";'
+                       replace='CURRENT_RELEASE="${current_release}";'
+        />
+    </target>
+
+
+    <target name="package release" description="">
+        <mkdir dir="${basedir}/${current_release}/Assemble2"></mkdir>
+
+        <copy todir="${basedir}/${current_release}/Assemble2">
+            <fileset dir="${basedir}/Assemble2" includes="**"></fileset>
+        </copy>
+
+        <chmod dir="${basedir}/${current_release}/Assemble2" perm="u+x"
+               includes="**/launch_*"/>
+
+        <exec executable="zip" dir="${basedir}/${current_release}">
+            <arg value="-r" />
+            <arg value="-X" />
+            <arg value="${basedir}/releases/${current_release}.zip" />
+            <arg value="." />
+        </exec>
+
+
+        <delete dir="${basedir}/${current_release}"></delete>
+
+    </target>
+
+</project>

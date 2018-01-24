@@ -26,16 +26,13 @@ public class AssembleConfig {
     private static List<String> availableServers = new ArrayList<>();
 
     public static void loadConfig() throws BackingStoreException, IOException {
-        String release = IoUtils.getAssemble2Release();
-        if (release.contains("Development Release:"))
-            release = release.split("Development Release:")[0].trim();
         if (document != null)
             return;
         File assembleUserDir = Assemble.getUserDir();
         File configFile = new File(assembleUserDir, "config.xml");
         if (!configFile.exists()) {
             Element root = new Element("assemble-config");
-            root.setAttribute("version", release);
+            root.setAttribute("version", Assemble.CURRENT_RELEASE);
             document = new Document(root);
             saveConfig();
         } else {
@@ -45,14 +42,14 @@ public class AssembleConfig {
                 if (document.getRootElement().getAttribute("version") == null) { //if no version attribute, the config file comes from a release before the 1.0 Release Candidate 1, and so => deletion
                     configFile.delete();
                     Element root = new Element("assemble-config");
-                    root.setAttribute("version", release);
+                    root.setAttribute("version", Assemble.CURRENT_RELEASE);
                     document = new Document(root);
                     showWelcomeDialog(true);
                     saveConfig();
                 } else {
-                    if (!document.getRootElement().getAttribute("version").getValue().trim().equals(release))
+                    if (!document.getRootElement().getAttribute("version").getValue().trim().equals(Assemble.CURRENT_RELEASE))
                         showWelcomeDialog(true);
-                    document.getRootElement().setAttribute("version", release);
+                    document.getRootElement().setAttribute("version", Assemble.CURRENT_RELEASE);
                     //recover the user colors (if any)
                     Element colors = document.getRootElement().getChild("colors");
                     if (colors != null) {
@@ -166,6 +163,7 @@ public class AssembleConfig {
             while ((inputLine = in.readLine()) != null) {
                 availableServers.add("http://"+inputLine);
             }
+            availableServers.add("http://localhost:8080");
             in.close();
 
         } catch (MalformedURLException e) {
@@ -340,7 +338,8 @@ public class AssembleConfig {
             e.setText("true");
             document.getRootElement().addContent(e);
         }
-        return new Boolean(e.getTextTrim());
+        //return new Boolean(e.getTextTrim());
+        return false;
     }
 
     public static void showWelcomeDialog(boolean show) {

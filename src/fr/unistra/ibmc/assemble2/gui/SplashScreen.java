@@ -24,8 +24,7 @@ public class SplashScreen extends JFrame implements MouseListener {
         ImageIcon icon = new ImageIcon(RessourcesUtils.getImage("logo4.png"));
         this.add(new JLabel(icon),BorderLayout.NORTH);
         this.progressBar = new JProgressBar();
-        String release = IoUtils.getAssemble2Release();
-        this.label = new JLabel(release);
+        this.label = new JLabel(Assemble.CURRENT_RELEASE);
         this.label.setAlignmentX(Component.CENTER_ALIGNMENT);
         JPanel labelPanel = new JPanel();
         labelPanel.setLayout(new BoxLayout(labelPanel, BoxLayout.Y_AXIS));

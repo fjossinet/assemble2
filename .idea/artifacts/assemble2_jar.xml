@@ -1,6 +1,18 @@
 <component name="ArtifactManager">
-  <artifact type="jar" build-on-make="true" name="assemble2:jar">
+  <artifact type="jar" name="assemble2:jar">
     <output-path>$PROJECT_DIR$/Assemble2/</output-path>
+    <properties id="ant-postprocessing">
+      <options enabled="true">
+        <file>file://$PROJECT_DIR$/assemble2.xml</file>
+        <target>package release</target>
+      </options>
+    </properties>
+    <properties id="ant-preprocessing">
+      <options enabled="true">
+        <file>file://$PROJECT_DIR$/assemble2.xml</file>
+        <target>set release version</target>
+      </options>
+    </properties>
     <root id="archive" name="assemble2.jar">
       <element id="module-output" name="assemble2" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/dsn.jar" path-in-jar="/" />

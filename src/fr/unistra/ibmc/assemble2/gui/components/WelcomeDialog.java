@@ -1,5 +1,6 @@
 package fr.unistra.ibmc.assemble2.gui.components;
 
+import fr.unistra.ibmc.assemble2.Assemble;
 import fr.unistra.ibmc.assemble2.gui.Mediator;
 import fr.unistra.ibmc.assemble2.utils.AssembleConfig;
 import fr.unistra.ibmc.assemble2.utils.IoUtils;
@@ -71,7 +72,7 @@ public class WelcomeDialog extends JDialog {
                 (otherPleasePreciseCheckBox.isSelected() ? "<li>" + ("other: " + (otherDetails.getText() != null ? otherDetails.getText().trim() : "")) + "</li>" : "") +
                 "</ul><br/>" +
                 "<b>My details:</b><br/>" +
-                "Assemble2 version: " + IoUtils.getAssemble2Release() + "<br/>" +
+                "Assemble2 version: " + Assemble.CURRENT_RELEASE + "<br/>" +
                 "Operating system: " + System.getProperty("os.name") + "<br/>" +
                 "Java version: " + System.getProperty("java.version") + "<br/><br/>" +
                 (email.getText() != null ? "My email: " + (email.getText().trim().length() != 0 ? email.getText().trim() : "None precised") + "<br/><br/>" : "") +
