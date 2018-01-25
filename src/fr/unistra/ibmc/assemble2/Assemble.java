@@ -53,10 +53,7 @@ import org.jdom.output.XMLOutputter;
 import org.noos.xing.mydoggy.*;
 import org.noos.xing.mydoggy.plaf.MyDoggyToolWindowManager;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.html.HTMLAnchorElement;
-import org.w3c.dom.html.HTMLInputElement;
-import org.w3c.dom.html.HTMLLIElement;
-import org.w3c.dom.html.HTMLTextAreaElement;
+import org.w3c.dom.html.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -112,7 +109,6 @@ public class Assemble extends Application implements SelectionTransmitter {
     private JMenu loadRecentFiles, alignmentMenu, genomicAnnotations;
 
     private FileMenu fileMenu;
-    private ExternalResourcesMenu externalResourcesMenu;
     private TutorialsMenu tutorialsMenu;
     private JMenu configure;
 
@@ -1493,8 +1489,6 @@ public class Assemble extends Application implements SelectionTransmitter {
             this.add(new ToolBarsMenu());
             tutorialsMenu = new TutorialsMenu();
             this.add(tutorialsMenu);
-            externalResourcesMenu = new ExternalResourcesMenu();
-            this.add(externalResourcesMenu);
             this.add(new AboutMenu());
         }
     }
@@ -1520,7 +1514,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             load.setIcon(new LoadIcon());
             this.add(load);
             JMenuItem item = new JMenuItem("Assemble2 Project");
-            item.setIcon(new FileIcon());
+            item.setIcon(new LoadIcon());
             item.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
                     if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
@@ -1551,7 +1545,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             load.add(item);
 
             genomicAnnotations = new JMenu("Genomic Annotations...");
-            genomicAnnotations.setIcon(new FileIcon());
+            genomicAnnotations.setIcon(new LoadIcon());
             load.add(genomicAnnotations);
 
             item = new JMenuItem("From a GFF3 File");
@@ -1671,7 +1665,11 @@ public class Assemble extends Application implements SelectionTransmitter {
                 genomicAnnotations.add(item);
             }*/
 
-            item = new JMenuItem("RNA Molecule(s)");
+            JMenu moleculesMenu = new JMenu("RNA Molecule...");
+            moleculesMenu.setIcon(new LoadIcon());
+            load.add(moleculesMenu);
+
+            item = new JMenuItem("From a FASTA File");
             item.setIcon(new FileIcon());
             item.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
@@ -1693,83 +1691,36 @@ public class Assemble extends Application implements SelectionTransmitter {
                         }
                     });
 
-                    /*fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
-                        @Override
-                        public boolean accept(File file) {
-                            return file.isDirectory() || file.getName().endsWith(".gff3");
-                        }
-
-                        @Override
-                        public String getDescription() {
-                            return "GFF3 Files (.gff3)";
-                        }
-                    });*/
-
                     if (fileChooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
                         loadData(fileChooser.getSelectedFile().getAbsolutePath(), "fasta-file");
                     }
                 }});
 
-            load.add(item);
+            moleculesMenu.add(item);
+
+            item = new JMenuItem("From the RNACentral Database");
+            item.setIcon(new WebIcon());
+            item.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    new javax.swing.SwingWorker() {
+                        @Override
+                        protected Object doInBackground() throws Exception {
+                        if (rnaCentralWebsite != null) {
+                            rnaCentralWebsite.setVisible(true);
+                            rnaCentralWebsite.toFront();
+                        } else {
+                            rnaCentralWebsite = new RNACentralWebsite();
+                        }
+                        return null;
+                        }
+                    }.execute();
+                }});
+
+            moleculesMenu.add(item);
 
             JMenu secondaryMenu = new JMenu("RNA Secondary Structure...");
             secondaryMenu.setIcon(new LoadIcon());
             load.add(secondaryMenu);
-            item = new JMenuItem("from the RNA STRAND Database");
-            item.setIcon(new WebIcon());
-            item.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
-                        return;
-                    mediator.clearSession();
-                    final String strandID = JOptionPane.showInputDialog(null,"Enter your STRAND ID", "ASE_00001");
-
-                    if (strandID != null && strandID.trim().length() != 0) {
-                        new javax.swing.SwingWorker() {
-                            @Override
-                            protected Object doInBackground() {
-                                mediator.getSecondaryCanvas().getActivityToolBar().startActivity(this);
-                                BufferedReader in = null;
-                                StringBuffer bpseqData = new StringBuffer();
-                                String moleculeName = null;
-                                try {
-                                    URL url = new URL("http://www.rnasoft.ca/strand/show_file.php?format=Bpseq&molecule_ID="+strandID.trim());
-                                    in = new BufferedReader(new InputStreamReader(url.openStream()));
-                                    String str = null;
-                                    boolean inBpseqData = false;
-                                    while ((str = in.readLine()) != null)
-                                        if (str.trim().startsWith("# File"))
-                                            inBpseqData = true;
-                                        else if (str.trim().startsWith("# RNA SSTRAND database,"))
-                                            moleculeName  = str.split("# RNA SSTRAND database,")[1];
-                                        else if (inBpseqData)
-                                            bpseqData.append(str+"\n");
-                                        else if (str.trim().startsWith("</textarea>"))
-                                            inBpseqData = false;
-                                    in.close();
-
-                                    mediator.getSecondaryCanvas().getMessagingSystem().addSingleStep("SSTRAND entry downloaded.", null, null);
-                                    mediator.getSecondaryCanvas().repaint();
-
-                                    SecondaryStructure ss = FileParser.parseBPSeq(new StringReader(bpseqData.toString()), mediator);
-                                    ss.setName(strandID.trim()+" (RNA STRAND DB)");
-                                    mediator.loadRNASecondaryStructure(ss, false, true);
-                                    mediator.getSecondaryCanvas().getMessagingSystem().addSingleStep("Done.", null, null);
-                                    mediator.getSecondaryCanvas().repaint();
-                                    ((JXFrame)window).setTitle(moleculeName);
-                                } catch (Exception ex) {
-                                    messageBar.printException(ex);
-                                }
-                                mediator.getSecondaryCanvas().getActivityToolBar().stopActivity();
-                                ((JXFrame)window).setTitle("RNA STRAND:"+strandID);
-                                return null;
-                            }
-                        }.execute();
-
-                    }
-                }
-            });
-            secondaryMenu.add(item);
 
             item = new JMenuItem("from a CT/BPSEQ/Vienna File");
             item.setIcon(new FileIcon());
@@ -1831,30 +1782,169 @@ public class Assemble extends Application implements SelectionTransmitter {
             });
             secondaryMenu.add(item);
 
-            tertiaryMenu = new JMenu("RNA Tertiary Structure...");
-            tertiaryMenu.setIcon(new LoadIcon());
-            load.add(tertiaryMenu);
-            item = new JMenuItem("from the RCSB Protein Data Bank");
+            item = new JMenuItem("from a Clustal/Stockholm File");
+            item.setIcon(new FileIcon());
+            item.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
+                        return;
+                    mediator.clearSession();
+                    final javax.swing.JFileChooser fileChooser = new javax.swing.JFileChooser(getLastWorkingDirectory());
+                    fileChooser.setFileHidingEnabled(true);
+                    fileChooser.setAcceptAllFileFilterUsed(false);
+
+                    fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                        @Override
+                        public boolean accept(File file) {
+                            return file.isDirectory() || file.getName().endsWith(".sto");
+                        }
+
+                        @Override
+                        public String getDescription() {
+                            return "Stockholm (.sto)";
+                        }
+                    });
+
+                    fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+                        @Override
+                        public boolean accept(File file) {
+                            return file.isDirectory() || file.getName().endsWith(".aln");
+                        }
+
+                        @Override
+                        public String getDescription() {
+                            return "Clustal (.aln)";
+                        }
+                    });
+
+                    if (fileChooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                        final File f = fileChooser.getSelectedFile();
+                        if (f.getName().endsWith(".aln")) {
+                            loadData(f.getAbsolutePath(), "clustal-file");
+                        }
+                        else if (f.getName().endsWith(".sto")) {
+                            loadData(f.getAbsolutePath(), "stockholm-file");
+                        }
+                    }
+                }
+            });
+            secondaryMenu.add(item);
+
+            item = new JMenuItem("from the RNA STRAND Database");
             item.setIcon(new WebIcon());
             item.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
                     if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
                         return;
-                    final String pdbId = JOptionPane.showInputDialog(null,"Enter your PDB ID", "1EHZ");
-                    if (pdbId != null && pdbId.trim().length() != 0) {
+                    mediator.clearSession();
+                    final String strandID = JOptionPane.showInputDialog(null,"Enter your STRAND ID", "ASE_00001");
+
+                    if (strandID != null && strandID.trim().length() != 0) {
                         new javax.swing.SwingWorker() {
                             @Override
-                            protected Object doInBackground() throws Exception {
+                            protected Object doInBackground() {
                                 mediator.getSecondaryCanvas().getActivityToolBar().startActivity(this);
-                                loadPDBID(pdbId.trim());
+                                BufferedReader in = null;
+                                StringBuffer bpseqData = new StringBuffer();
+                                String moleculeName = null;
+                                try {
+                                    URL url = new URL("http://www.rnasoft.ca/strand/show_file.php?format=Bpseq&molecule_ID="+strandID.trim());
+                                    in = new BufferedReader(new InputStreamReader(url.openStream()));
+                                    String str = null;
+                                    boolean inBpseqData = false;
+                                    while ((str = in.readLine()) != null)
+                                        if (str.trim().startsWith("# File"))
+                                            inBpseqData = true;
+                                        else if (str.trim().startsWith("# RNA SSTRAND database,"))
+                                            moleculeName  = str.split("# RNA SSTRAND database,")[1];
+                                        else if (inBpseqData)
+                                            bpseqData.append(str+"\n");
+                                        else if (str.trim().startsWith("</textarea>"))
+                                            inBpseqData = false;
+                                    in.close();
+
+                                    mediator.getSecondaryCanvas().getMessagingSystem().addSingleStep("SSTRAND entry downloaded.", null, null);
+                                    mediator.getSecondaryCanvas().repaint();
+
+                                    SecondaryStructure ss = FileParser.parseBPSeq(new StringReader(bpseqData.toString()), mediator);
+                                    ss.setName(strandID.trim()+" (RNA STRAND DB)");
+                                    mediator.loadRNASecondaryStructure(ss, false, true);
+                                    mediator.getSecondaryCanvas().getMessagingSystem().addSingleStep("Done.", null, null);
+                                    mediator.getSecondaryCanvas().repaint();
+                                    ((JXFrame)window).setTitle(moleculeName);
+                                } catch (Exception ex) {
+                                    messageBar.printException(ex);
+                                }
                                 mediator.getSecondaryCanvas().getActivityToolBar().stopActivity();
+                                ((JXFrame)window).setTitle("RNA STRAND:"+strandID);
                                 return null;
                             }
                         }.execute();
+
                     }
                 }
             });
-            tertiaryMenu.add(item);
+            secondaryMenu.add(item);
+
+            item = new JMenuItem("from the Rfam Database");
+            item.setIcon(new WebIcon());
+            item.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
+                        return;
+                    mediator.clearSession();
+                    List<JComponent> inputs = new ArrayList<JComponent>();
+                    inputs.add(new JLabel("Rfam ID"));
+                    final JTextField rfamId = new JTextField("RF00025");
+                    inputs.add(rfamId);
+                    //inputs.add(new JLabel("Type"));
+                    final JComboBox type = new JComboBox(new String[]{"seed", "full"});
+                    //inputs.add(type);
+                    final JComboBox nse = new JComboBox(new String[]{"Yes", "No"});
+                    //inputs.add(new JLabel("Organism names"));
+                    //inputs.add(nse);
+                    if (JOptionPane.OK_OPTION ==  JOptionPane.showConfirmDialog(null, inputs.toArray(new JComponent[]{}), "Enter your Rfam Details", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE)) {
+
+                        if (rfamId.getText().trim().length() != 0) {
+                            new javax.swing.SwingWorker() {
+                                @Override
+                                protected Object doInBackground() throws Exception {
+                                    mediator.getSecondaryCanvas().getActivityToolBar().startActivity(this);
+                                    loadRfamID(rfamId.getText().trim());
+                                    mediator.getSecondaryCanvas().getActivityToolBar().stopActivity();
+                                    return null;
+                                }
+                            }.execute();
+
+                        }
+                    }
+                }
+            });
+            secondaryMenu.add(item);
+
+            item = new JMenuItem("from the MFold Website");
+            item.setIcon(new WebIcon());
+            item.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    new javax.swing.SwingWorker() {
+                        @Override
+                        protected Object doInBackground() throws Exception {
+                        if (mfoldWebServer != null) {
+                            mfoldWebServer.setVisible(true);
+                            mfoldWebServer.toFront();
+                        } else {
+                            mfoldWebServer = new MfoldWebServer();
+                        }
+                        return null;
+                        }
+                    }.execute();
+                }
+            });
+            secondaryMenu.add(item);
+
+            tertiaryMenu = new JMenu("RNA Tertiary Structure...");
+            tertiaryMenu.setIcon(new LoadIcon());
+            load.add(tertiaryMenu);
 
             item = new JMenuItem("from a PDB File");
             item.setIcon(new FileIcon());
@@ -1930,99 +2020,7 @@ public class Assemble extends Application implements SelectionTransmitter {
             });
             tertiaryMenu.add(item);
 
-            alignmentMenu = new JMenu("RNA Alignment...");
-            alignmentMenu.setIcon(new LoadIcon());
-            load.add(alignmentMenu);
-            item = new JMenuItem("from the Rfam Database");
-            item.setIcon(new WebIcon());
-            item.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
-                        return;
-                    mediator.clearSession();
-                    List<JComponent> inputs = new ArrayList<JComponent>();
-                    inputs.add(new JLabel("Rfam ID"));
-                    final JTextField rfamId = new JTextField("RF00025");
-                    inputs.add(rfamId);
-                    //inputs.add(new JLabel("Type"));
-                    final JComboBox type = new JComboBox(new String[]{"seed", "full"});
-                    //inputs.add(type);
-                    final JComboBox nse = new JComboBox(new String[]{"Yes", "No"});
-                    //inputs.add(new JLabel("Organism names"));
-                    //inputs.add(nse);
-                    if (JOptionPane.OK_OPTION ==  JOptionPane.showConfirmDialog(null, inputs.toArray(new JComponent[]{}), "Enter your Rfam Details", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE)) {
 
-                        if (rfamId.getText().trim().length() != 0) {
-                            new javax.swing.SwingWorker() {
-                                @Override
-                                protected Object doInBackground() throws Exception {
-                                    mediator.getSecondaryCanvas().getActivityToolBar().startActivity(this);
-                                    loadRfamID(rfamId.getText().trim());
-                                    mediator.getSecondaryCanvas().getActivityToolBar().stopActivity();
-                                    return null;
-                                }
-                            }.execute();
-
-                        }
-                    }
-                }
-            });
-            alignmentMenu.add(item);
-
-            item = new JMenuItem("from a Clustal/Stockholm File");
-            item.setIcon(new FileIcon());
-            item.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    if (mediator.getSecondaryStructure() != null && JOptionPane.OK_OPTION != JOptionPane.showConfirmDialog(Assemble.this.window,"Are you sure to quit the current Project?"))
-                        return;
-                    mediator.clearSession();
-                    final javax.swing.JFileChooser fileChooser = new javax.swing.JFileChooser(getLastWorkingDirectory());
-                    fileChooser.setFileHidingEnabled(true);
-                    fileChooser.setAcceptAllFileFilterUsed(false);
-
-                    fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
-                        @Override
-                        public boolean accept(File file) {
-                            return file.isDirectory() || file.getName().endsWith(".sto");
-                        }
-
-                        @Override
-                        public String getDescription() {
-                            return "Stockholm (.sto)";
-                        }
-                    });
-
-                    fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
-                        @Override
-                        public boolean accept(File file) {
-                            return file.isDirectory() || file.getName().endsWith(".aln");
-                        }
-
-                        @Override
-                        public String getDescription() {
-                            return "Clustal (.aln)";
-                        }
-                    });
-
-                    if (fileChooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
-                        final File f = fileChooser.getSelectedFile();
-                        if (f.getName().endsWith(".aln")) {
-                            loadData(f.getAbsolutePath(), "clustal-file");
-                        }
-                        else if (f.getName().endsWith(".sto")) {
-                            loadData(f.getAbsolutePath(), "stockholm-file");
-                        }
-                    }
-                }
-            });
-            alignmentMenu.add(item);
-
-            /*if (AssembleConfig.getAvailableServers().trim().length() == 0) {
-                item = new JMenuItem("From MongoDB");
-                item.setIcon(new DatabaseIcon());
-                item.addActionListener(loadAlignmentsFromMongoDB);
-                alignmentMenu.add(item);
-            }*/
 
             loadRecentFiles = new JMenu("Load Recent...") {
                 public void paintComponent(Graphics graphics) {
@@ -2699,74 +2697,6 @@ public class Assemble extends Application implements SelectionTransmitter {
                 }
             });
             this.add(item);
-        }
-    }
-
-    private class ExternalResourcesMenu extends JMenu {
-
-        public ExternalResourcesMenu() {
-            super("External Resources");
-
-            JMenuItem item = new JMenuItem("Nucleic Acid Database");
-            this.add(item);
-
-            item.setIcon(new WebIcon());
-            item.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    new javax.swing.SwingWorker() {
-                        @Override
-                        protected Object doInBackground() throws Exception {
-                            if (ndbWebsite != null) {
-                                ndbWebsite.setVisible(true);
-                                ndbWebsite.toFront();
-                            } else {
-                                ndbWebsite = new NDBWebsite();
-                            }
-                            return null;
-                        }
-                    }.execute();
-                }});
-
-            item = new JMenuItem("RNAcentral");
-            this.add(item);
-
-            item.setIcon(new WebIcon());
-            item.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    new javax.swing.SwingWorker() {
-                        @Override
-                        protected Object doInBackground() throws Exception {
-                            if (rnaCentralWebsite != null) {
-                                rnaCentralWebsite.setVisible(true);
-                                rnaCentralWebsite.toFront();
-                            } else {
-                                rnaCentralWebsite = new RNACentralWebsite();
-                            }
-                            return null;
-                        }
-                    }.execute();
-                }});
-
-            item = new JMenuItem("mfold Web Server");
-            this.add(item);
-
-            item.setIcon(new WebIcon());
-            item.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    new javax.swing.SwingWorker() {
-                        @Override
-                        protected Object doInBackground() throws Exception {
-                            if (mfoldWebServer != null) {
-                                mfoldWebServer.setVisible(true);
-                                mfoldWebServer.toFront();
-                            } else {
-                                mfoldWebServer = new MfoldWebServer();
-                            }
-                            return null;
-                        }
-                    }.execute();
-                }});
-
         }
     }
 
@@ -4273,26 +4203,39 @@ public class Assemble extends Application implements SelectionTransmitter {
                     webEngine.getLoadWorker().stateProperty().addListener(
                             new javafx.beans.value.ChangeListener<Worker.State>() {
                                 public void stateChanged(ChangeEvent e) {
+                                    System.out.println("OK");
                                 }
 
                                 public void changed(ObservableValue ov, Worker.State oldState, Worker.State newState) {
                                     if (newState == Worker.State.SUCCEEDED) {
                                         org.w3c.dom.Document doc = webEngine.getDocument();
-                                        NodeList ps = doc.getElementsByTagName("li");
-                                        for (int i=0 ; i < ps.getLength() ; i++) {
-                                            HTMLLIElement li = (HTMLLIElement)ps.item(i);
-                                            String content = li.getAttribute("class");
-                                            if (content!= null && content.matches("lead")) {
-                                                currentName = li.getTextContent();
-                                                loadInAssemble.setText("Load "+currentName);
-                                                loadInAssemble.setDisable(false);
-                                                NodeList pres = doc.getElementsByTagName("pre");
-                                                for (int j = 0 ; j < pres.getLength() ; j++) {
-                                                    org.w3c.dom.Node pre = (org.w3c.dom.Node)pres.item(j);
-                                                    currentSequence =  pre.getTextContent().trim().replaceAll("\\s+", " ");
-                                                }
+                                        NodeList buttons = doc.getElementsByTagName("button");
+                                        for (int i=0 ; i < buttons.getLength() ; i++) {
+                                            HTMLButtonElement b = (HTMLButtonElement)buttons.item(i);
+                                            if (b.getTextContent().equals("Show sequence")) {
+                                                org.w3c.dom.events.EventListener listener = new org.w3c.dom.events.EventListener() {
+                                                    public void handleEvent(org.w3c.dom.events.Event ev) {
+                                                        NodeList ps = doc.getElementsByTagName("h1");
+                                                        for (int i=0 ; i < ps.getLength() ; i++) {
+                                                            HTMLHeadingElement h1 = (HTMLHeadingElement) ps.item(i);
+                                                            String name = h1.getTextContent().replaceAll("\\s+"," ").trim();
+                                                            currentName = name;
+                                                            loadInAssemble.setText("Load "+name.split( " ")[1]);
+                                                            loadInAssemble.setDisable(false);
+                                                        }
+                                                        ps = doc.getElementsByTagName("pre");
+                                                        for (int i=0 ; i < ps.getLength() ; i++) {
+                                                            HTMLPreElement pre = (HTMLPreElement)ps.item(i);
+                                                            String id = pre.getAttribute("id");
+                                                            if (id!= null && id.equals("rna-sequence"))
+                                                                currentSequence =  pre.getTextContent().trim().replaceAll("\\s+", " ");
+                                                        }
+                                                    }
+                                                };
+                                                ((org.w3c.dom.events.EventTarget)b).addEventListener("click", listener, false);
                                             }
                                         }
+
                                     }
 
                                 }
