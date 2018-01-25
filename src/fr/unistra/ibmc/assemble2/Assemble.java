@@ -4263,6 +4263,12 @@ public class Assemble extends Application implements SelectionTransmitter {
             this.add(jfxPanel, BorderLayout.CENTER);
             this.setVisible(true);
             this.toFront();
+            this.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    mfoldWebServer = null;
+                }
+            });
         }
 
         private void createScene() {
@@ -4280,7 +4286,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                     // Set up the embedded browser:
                     WebView browser = new WebView();
                     final WebEngine webEngine = browser.getEngine();
-                    webEngine.load("http://mfold.rna.albany.edu/?q=mfold/RNA-Folding-Form");
+                    webEngine.load("http://unafold.rna.albany.edu/?q=mfold/RNA-Folding-Form");
 
                     root.setCenter(browser);
 
@@ -4288,7 +4294,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                     home.setOnAction(new EventHandler<javafx.event.ActionEvent>() {
                         @Override
                         public void handle(javafx.event.ActionEvent actionEvent) {
-                            webEngine.load("http://mfold.rna.albany.edu/?q=mfold/RNA-Folding-Form");
+                            webEngine.load("http://unafold.rna.albany.edu/?q=mfold/RNA-Folding-Form");
                         }
                     });
 
@@ -4309,7 +4315,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                         @Override
                         public void handle(javafx.event.ActionEvent actionEvent) {
 
-                            new javax.swing.SwingWorker() {
+                            new SwingWorker() {
                                 @Override
                                 protected Object doInBackground() throws Exception {
                                     URL url = new URL(structureLinks.get(selectedStructure));
@@ -4366,7 +4372,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                                         loadInAssemble.setDisable(true);
                                         for (int i=0 ; i < inputs.getLength() ; i++) {
                                             HTMLInputElement input = (HTMLInputElement)inputs.item(i);
-                                            if (input.getAttribute("name") != null && input.getAttribute("name").equals("SEQ_NAME")) {
+                                            if (mediator.getSecondaryStructure()!= null && input.getAttribute("name") != null && input.getAttribute("name").equals("SEQ_NAME")) {
                                                 input.setValue(mediator.getSecondaryStructure().getMolecule().getName());
                                                 break;
                                             }
@@ -4374,7 +4380,7 @@ public class Assemble extends Application implements SelectionTransmitter {
                                         NodeList textareas = doc.getElementsByTagName("textarea");
                                         for (int i=0 ; i < textareas.getLength() ; i++) {
                                             HTMLTextAreaElement textarea = (HTMLTextAreaElement)textareas.item(i);
-                                            if (textarea.getAttribute("name") != null && textarea.getAttribute("name").equals("SEQUENCE")) {
+                                            if (mediator.getSecondaryStructure()!= null && textarea.getAttribute("name") != null && textarea.getAttribute("name").equals("SEQUENCE")) {
                                                 textarea.setValue(mediator.getSecondaryStructure().getMolecule().printSequence());
                                                 break;
                                             }
@@ -4383,9 +4389,9 @@ public class Assemble extends Application implements SelectionTransmitter {
                                         NodeList links = doc.getElementsByTagName("a");
                                         for (int i=0 ; i < links.getLength() ; i++) {
                                             HTMLAnchorElement link = (HTMLAnchorElement)links.item(i);
-                                            if (link.getHref().matches("http://mfold\\.rna\\.albany\\.edu/cgi-bin/ct\\.cgi.+COUNT.+")) {
-                                                structureLinks.add(link.getHref());
-                                                structures.getItems().add("Structure #"+link.getHref().split("COUNT=")[1]);
+                                            if (link.getTextContent().trim().matches("^Structure [0-9]+$")) {
+                                                structureLinks.add(link.getHref().replaceFirst("out.cgi","ct.cgi"));
+                                                structures.getItems().add(link.getTextContent().trim());
                                             }
                                         }
                                         if (!structures.getItems().isEmpty()) {
